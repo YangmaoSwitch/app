@@ -20,7 +20,7 @@ import {
   Zap,
 } from "lucide-react";
 import TitleBar, { isMac } from "./TitleBar";
-import { api, Account, AccountUsage, Catalog, GatewayInfo, LimitUsage, ModelEntry, ModelSquare, SquareModel, OVERAGE, Provider, quotaParts, quotaText, REQUIRES, UsageRow } from "./api";
+import { api, Account, AccountUsage, Catalog, GatewayInfo, LimitUsage, ModelEntry, ModelSquare, SquareModel, Offer, Access, modelKey, quotaShort, OVERAGE, Provider, quotaParts, quotaText, REQUIRES, UsageRow } from "./api";
 
 type Page = "catalog" | "models" | "accounts" | "usage" | "connect";
 type Notify = (ok: boolean, text: string) => void;
@@ -415,7 +415,7 @@ function ProviderDetail({ p, onAdd }: { p: Provider; onAdd: () => void }) {
         {(p.api?.free_models?.length ?? 0) > 0 && (
           <>
             <dt>免费模型</dt>
-            <dd>{p.api!.free_models.join("、")}</dd>
+            <dd>{p.api!.free_models!.join("、")}</dd>
           </>
         )}
         {p.terms.length > 0 && (
@@ -538,22 +538,48 @@ function modelTags(m: SquareModel): { text: string; tone?: string }[] {
   return t;
 }
 
+const ACCESS: Record<Access, { text: string; tone: string }> = {
+  free: { text: "免费模型", tone: "ok" },
+  quota: { text: "用免费额度", tone: "blue" },
+  paid: { text: "付费", tone: "" },
+  account: { text: "你的账号可用", tone: "ok" },
+};
+
 function ModelsPage(props: { catalog: Catalog | null; accounts: Account[]; notify: Notify; onOpenProvider: () => void }) {
   const [data, setData] = useState<ModelSquare | null>(null);
   const [q, setQ] = useState("");
   const [kind, setKind] = useState<"all" | "vision" | "tools" | "reasoning">("all");
   const [provider, setProvider] = useState("all");
   const [open, setOpen] = useState<SquareModel | null>(null);
+  const [mine, setMine] = useState<ModelEntry[]>([]);
   useEffect(() => {
     api.modelSquare().then(setData).catch((e) => props.notify(false, String(e)));
   }, []);
+  useEffect(() => {
+    api.models().then(setMine).catch(() => setMine([]));
+  }, [props.accounts]);
 
   const pName = (id: string) => {
     const p = props.catalog?.providers.find((x) => x.id === id);
     return p ? pname(p) : id;
   };
   const owned = new Set(props.accounts.filter((a) => a.enabled).map((a) => a.provider_id));
-  const models = data?.models ?? [];
+  // Add the platforms of your own accounts whose model list contains the model, even if the catalog data doesn't.
+  const models = useMemo(() => {
+    const provOf = new Map(props.accounts.map((a) => [a.id, a.provider_id]));
+    const byKey = new Map<string, Offer[]>();
+    for (const e of mine)
+      for (const acc of e.accounts) {
+        const p = provOf.get(acc);
+        if (!p) continue;
+        const k = modelKey(e.id);
+        byKey.set(k, [...(byKey.get(k) ?? []), { provider: p, model: e.id, access: "account" }]);
+      }
+    return (data?.models ?? []).map((m) => {
+      const extra = (byKey.get(modelKey(m.id)) ?? []).filter((o, i, a) => !m.offers.some((x) => x.provider === o.provider) && a.findIndex((y) => y.provider === o.provider) === i);
+      return extra.length ? { ...m, offers: [...m.offers, ...extra] } : m;
+    });
+  }, [data, mine, props.accounts]);
   const providers = Array.from(new Set(models.flatMap((m) => m.offers.map((o) => o.provider))));
   const text = q.trim().toLowerCase();
   const list = models.filter(
@@ -612,7 +638,7 @@ function ModelsPage(props: { catalog: Catalog | null; accounts: Account[]; notif
       {list.length === 0 && data && <div className="empty small-empty">没有符合条件的模型。</div>}
       <div className="model-grid">
         {list.map((m) => {
-          const ready = m.offers.some((o) => owned.has(o.provider));
+          const ready = m.offers.some((o) => o.access !== "paid" && owned.has(o.provider));
           return (
             <button key={m.id} className="mcard" onClick={() => setOpen(m)}>
               {isNew(m.created) && <span className="ribbon">New</span>}
@@ -620,7 +646,11 @@ function ModelsPage(props: { catalog: Catalog | null; accounts: Account[]; notif
                 <Avatar name={m.vendor ?? m.name} seed={m.vendor ?? m.offers[0].provider} size={34} />
                 <div className="mcard-title">
                   <b>{m.vendor ? `${m.vendor} / ${m.name}` : m.name}</b>
-                  <span>{m.offers.map((o) => pName(o.provider)).join("、")}</span>
+                  <span>
+                    {m.offers.length > 2
+                      ? `${m.offers.slice(0, 2).map((o) => pName(o.provider)).join("、")} 等 ${m.offers.length} 个平台`
+                      : m.offers.map((o) => pName(o.provider)).join("、")}
+                  </span>
                 </div>
               </div>
               <p className="mcard-desc">{m.description || "暂无介绍。"}</p>
@@ -688,15 +718,24 @@ function ModelsPage(props: { catalog: Catalog | null; accounts: Account[]; notif
               )}
             </dl>
             <div className="offers">
-              <h4>在哪里免费用</h4>
-              {open.offers.map((o) => (
+              <h4>
+                提供这个模型的平台 <span className="muted num">{open.offers.length}</span>
+              </h4>
+              {open.offers.map((o) => {
+                const p = props.catalog?.providers.find((x) => x.id === o.provider);
+                const acc = ACCESS[o.access ?? "free"];
+                const q = o.access !== "paid" && p?.quotas[0] ? quotaShort(p.quotas[0]) : null;
+                return (
                 <div className="offer" key={o.provider}>
                   <Avatar name={pName(o.provider)} seed={o.provider} size={30} />
                   <div className="offer-main">
-                    <b>{pName(o.provider)}</b>
+                    <b>
+                      {pName(o.provider)} <span className={`mtag ${acc.tone}`}>{acc.text}</span>
+                    </b>
                     <code>{o.model}</code>
+                    {q && <span className="muted small">{q}</span>}
                   </div>
-                  {owned.has(o.provider) ? (
+                  {o.access === "paid" ? null : owned.has(o.provider) ? (
                     <button
                       className="btn"
                       onClick={async () => {
@@ -718,7 +757,8 @@ function ModelsPage(props: { catalog: Catalog | null; accounts: Account[]; notif
                     </button>
                   )}
                 </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         </div>

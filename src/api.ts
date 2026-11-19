@@ -31,7 +31,7 @@ export interface Provider {
   status: string;
   last_verified: string;
   summary?: string;
-  api?: { protocol: string[]; base_url: string; free_models: string[]; free_model_rule?: string };
+  api?: { protocol: string[]; base_url: string; free_models?: string[]; free_model_rule?: string; models?: string[]; models_url?: string; models_access?: "free" | "quota" };
   signup: { url: string; requires: string[]; regions_blocked: string[]; notes?: string };
   quotas: Quota[];
   overage: "blocked" | "auto_paid" | "manual" | "unknown";
@@ -104,7 +104,22 @@ export interface SquareModel {
   created: string | null;
   hugging_face_id: string | null;
   description_source: string | null;
-  offers: { provider: string; model: string }[];
+  offers: Offer[];
+}
+
+/** free = free model, quota = counted against the platform's free quota/credits, paid = paid only,
+ *  account = not in the catalog data but listed by one of your own accounts. */
+export type Access = "free" | "quota" | "paid" | "account";
+export interface Offer {
+  provider: string;
+  model: string;
+  access?: Access;
+}
+
+/** Normalized model name used to match the same model across platforms (same rule as the catalog build). */
+export function modelKey(id: string): string {
+  const last = id.split("/").pop() ?? id;
+  return last.split(":")[0].toLowerCase().replace(/[\s_.]+/g, "-");
 }
 
 export interface ModelSquare {

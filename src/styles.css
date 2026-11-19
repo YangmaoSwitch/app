@@ -268,7 +268,8 @@ pre { margin: 0 0 10px; background: #18181b; color: #e4e4e7; padding: 14px 16px;
 .offers h4 { margin: 4px 0 8px; font-size: 13.5px; }
 .offer { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-top: 1px solid var(--line-soft); }
 .offer-main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
-.offer-main b { font-size: 13.5px; }
+.offer-main b { font-size: 13.5px; display: flex; align-items: center; gap: 6px; }
+.offer-main .small { margin-top: 2px; }
 .offer-main code { font-size: 12px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .mcard .mtags { flex-wrap: nowrap; overflow: hidden; mask-image: linear-gradient(90deg, #000 88%, transparent); }
 .mcard .mtag { flex: none; }
