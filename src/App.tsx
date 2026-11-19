@@ -215,9 +215,8 @@ function CatalogPage(props: { catalog: Catalog | null; accounts: Account[]; noti
   );
 
   const groups: [string, Provider[]][] = [
-    ["一键开通", list.filter((p) => p.onboarding.level === "L3")],
-    ["国内平台", list.filter((p) => p.onboarding.level !== "L3" && p.region === "cn")],
-    ["海外平台", list.filter((p) => p.onboarding.level !== "L3" && p.region === "global")],
+    ["国内平台", list.filter((p) => p.region === "cn")],
+    ["海外平台", list.filter((p) => p.region === "global")],
   ];
 
   const connect = async () => {
