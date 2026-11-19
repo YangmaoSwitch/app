@@ -22,6 +22,27 @@
 - 不代替用户填写验证码，不使用虚拟号码，不批量注册，也不多开账号。
 - 不托管或共享 Key，不做中转。
 
+## 使用本地入口
+
+在其他工具里把 Base URL 设为 `http://127.0.0.1:17890/v1`，API Key 随意填写；模型名写成 `<账号>/<平台上的模型名>`，例如 `openrouter/<某个 :free 模型>`。到达本地上限时返回 HTTP 429，错误码 `local_quota_reached`。
+
+## 开发
+
+技术栈：Tauri 2（Rust）+ React + TypeScript。
+
+```
+crates/ym-core   目录模型、额度换算、本地账本、本地网关、OAuth PKCE（不依赖 Tauri，可单独测试）
+src-tauri        桌面端外壳：钥匙串、命令、启动网关
+src              界面
+```
+
+```bash
+npm install
+cargo test -p ym-core      # 核心逻辑测试
+npm run tauri dev          # 开发运行
+npm run tauri build        # 打包
+```
+
 ## 许可证
 
 [MIT](LICENSE)
