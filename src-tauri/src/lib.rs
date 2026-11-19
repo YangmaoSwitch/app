@@ -180,6 +180,29 @@ fn open_url(app: tauri::AppHandle, url: String) -> R<()> {
     app.opener().open_url(url, None::<&str>).map_err(s)
 }
 
+const IDENTIFIER: &str = "io.github.yangmaoswitch.app";
+
+fn data_dir_without_tauri() -> Option<PathBuf> {
+    #[cfg(windows)]
+    let base = std::env::var_os("APPDATA").map(PathBuf::from);
+    #[cfg(target_os = "macos")]
+    let base = std::env::var_os("HOME").map(|h| PathBuf::from(h).join("Library/Application Support"));
+    #[cfg(all(unix, not(target_os = "macos")))]
+    let base = std::env::var_os("XDG_DATA_HOME")
+        .map(PathBuf::from)
+        .or_else(|| std::env::var_os("HOME").map(|h| PathBuf::from(h).join(".local/share")));
+    base.map(|b| b.join(IDENTIFIER))
+}
+
+/// Remove every stored key from the OS keychain (used by the uninstaller).
+pub fn purge_keys() {
+    let Some(dir) = data_dir_without_tauri() else { return };
+    let accounts = AccountFile::new(dir.join("accounts.json")).load().unwrap_or_default();
+    for a in accounts {
+        keychain_delete(&a.id);
+    }
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
