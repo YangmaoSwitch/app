@@ -986,7 +986,7 @@ function ConnectPage(props: { accounts: Account[]; gw: GatewayInfo | null; onGw:
                   macOS / Linux
                 </button>
               </CopyRow>
-              <p className="muted small">平台不支持 Claude 接口时，羊毛switch 会在本机把请求转换成 OpenAI 格式再发出去，工具调用（function calling）和流式输出都能用。</p>
+              <p className="muted small">羊毛switch 只做转发，不转换格式：Claude 接口的请求只会发给提供原生 Claude 接口的平台（目前有智谱、硅基流动、AMD Radeon Cloud）。所选模型的平台没有 Claude 接口时会直接报错，请改用 OpenAI 接口。</p>
             </>
           )}
         </section>

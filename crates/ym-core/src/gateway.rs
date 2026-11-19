@@ -6,8 +6,9 @@
 //!   offers it, skipping accounts that hit their local cap or were rate limited, and
 //!   falls through to the next account. `<account>/<model>` pins a specific account.
 //! * Requests are forwarded with the user's own key; usage is recorded locally.
-//! * Claude-format requests go to the provider's native Anthropic endpoint when it has
-//!   one, otherwise they are converted to OpenAI format and back.
+//! * Pure forwarding: OpenAI-format requests go to the provider's OpenAI endpoint,
+//!   Claude-format requests go to the provider's native Anthropic endpoint. No format
+//!   conversion; a provider without a native Claude endpoint returns an error.
 
 use std::net::SocketAddr;
 use std::sync::{Arc, RwLock};
@@ -24,7 +25,6 @@ use serde::Serialize;
 use serde_json::{json, Value};
 
 use crate::accounts::{Account, SecretStore};
-use crate::anthropic;
 use crate::ledger::Ledger;
 use crate::limits::{Limit, Unit};
 
@@ -98,7 +98,6 @@ impl GwError {
 struct Accepted {
     resp: reqwest::Response,
     row: i64,
-    native_anthropic: bool,
 }
 
 /// List the model ids an OpenAI-compatible provider offers.
@@ -176,17 +175,35 @@ impl Gateway {
     }
 
     /// Accounts that can serve `model`, in priority order, with the upstream model id.
-    fn candidates(&self, model: &str) -> Result<Vec<(Account, String)>, GwError> {
+    fn candidates(&self, model: &str, claude: bool) -> Result<Vec<(Account, String)>, GwError> {
         let accounts = self.accounts.read().unwrap().clone();
+        let no_native = |a: &Account| {
+            GwError::new(
+                StatusCode::BAD_REQUEST,
+                "claude_api_unavailable",
+                format!("{} 没有原生 Claude 接口，请改用 OpenAI 接口（Base URL 加 /v1）", a.label),
+            )
+        };
         if let Some((prefix, rest)) = model.split_once('/') {
             if let Some(a) = accounts.iter().find(|a| a.id == prefix) {
                 if !a.enabled {
                     return Err(GwError::new(StatusCode::FORBIDDEN, "account_disabled", format!("账号 {prefix} 已停用")));
                 }
+                if claude && a.anthropic_base_url.is_none() {
+                    return Err(no_native(a));
+                }
                 return Ok(vec![(a.clone(), rest.to_string())]);
             }
         }
-        let found: Vec<(Account, String)> = accounts.iter().filter(|a| a.serves(model)).map(|a| (a.clone(), model.to_string())).collect();
+        let serving: Vec<&Account> = accounts.iter().filter(|a| a.serves(model)).collect();
+        let found: Vec<(Account, String)> = serving
+            .iter()
+            .filter(|a| !claude || a.anthropic_base_url.is_some())
+            .map(|a| ((*a).clone(), model.to_string()))
+            .collect();
+        if found.is_empty() && !serving.is_empty() {
+            return Err(no_native(serving[0]));
+        }
         if found.is_empty() {
             return Err(GwError::new(
                 StatusCode::NOT_FOUND,
@@ -274,7 +291,7 @@ impl Gateway {
             if !resp.status().is_success() {
                 let _ = self.ledger.cancel(row);
             }
-            return Ok(Accepted { resp, row, native_anthropic: native });
+            return Ok(Accepted { resp, row });
         }
         Err(GwError::new(StatusCode::TOO_MANY_REQUESTS, "local_quota_reached", format!("没有可用的账号：{}", reasons.join("；"))))
     }
@@ -430,7 +447,7 @@ async fn openai(State(gw): State<Arc<Gateway>>, Path(path): Path<String>, header
     let Some(model) = req.get("model").and_then(Value::as_str).map(str::to_string) else {
         return GwError::new(StatusCode::BAD_REQUEST, "missing_model", "缺少 model 字段").openai();
     };
-    let cands = match gw.candidates(&model) {
+    let cands = match gw.candidates(&model, false) {
         Ok(c) => c,
         Err(e) => return e.openai(),
     };
@@ -463,85 +480,58 @@ async fn messages(State(gw): State<Arc<Gateway>>, headers: HeaderMap, body: Byte
     let Some(model) = req.get("model").and_then(Value::as_str).map(str::to_string) else {
         return GwError::new(StatusCode::BAD_REQUEST, "missing_model", "缺少 model 字段").anthropic();
     };
-    let cands = match gw.candidates(&model) {
+    let cands = match gw.candidates(&model, true) {
         Ok(c) => c,
         Err(e) => return e.anthropic(),
     };
     let stream = req.get("stream").and_then(Value::as_bool).unwrap_or(false);
     let accepted = gw
-        .dispatch(cands, |acct, m| match &acct.anthropic_base_url {
-            Some(base) => {
-                let mut b = req.clone();
-                b["model"] = json!(m);
-                (format!("{}/v1/messages", base.trim_end_matches('/')), b, true)
-            }
-            None => (format!("{}/chat/completions", acct.base_url), anthropic::request_to_openai(&req, m), false),
+        .dispatch(cands, |acct, m| {
+            let mut b = req.clone();
+            b["model"] = json!(m);
+            let base = acct.anthropic_base_url.as_deref().unwrap_or_default().trim_end_matches('/');
+            (format!("{base}/v1/messages"), b, true)
         })
         .await;
-    let a = match accepted {
-        Ok(a) => a,
-        Err(e) => return e.anthropic(),
-    };
-    if a.native_anthropic {
-        return passthrough(gw, a, stream).await;
+    match accepted {
+        Ok(a) => passthrough(gw, a, stream).await,
+        Err(e) => e.anthropic(),
     }
-
-    // Converted: OpenAI response -> Anthropic response.
-    let status = status_of(&a.resp);
-    if !a.resp.status().is_success() {
-        let text = a.resp.text().await.unwrap_or_default();
-        let msg = serde_json::from_str::<Value>(&text)
-            .ok()
-            .and_then(|v| v.pointer("/error/message").and_then(Value::as_str).map(str::to_string))
-            .unwrap_or(text);
-        return GwError::new(status, "upstream_error", format!("平台返回 HTTP {}：{msg}", status.as_u16())).anthropic();
-    }
-    if !stream {
-        let v: Value = a.resp.json().await.unwrap_or(Value::Null);
-        let (p, c) = usage_from(&v).unwrap_or((0, 0));
-        let _ = gw.ledger.finish(a.row, status.as_u16(), p, c);
-        return Json(anthropic::response_from_openai(&v, &model)).into_response();
-    }
-    let (tx, rx) = tokio::sync::mpsc::channel::<Result<Bytes, std::io::Error>>(64);
-    let row = a.row;
-    tokio::spawn(async move {
-        let mut conv = anthropic::StreamConverter::new(&model);
-        let mut up = a.resp.bytes_stream();
-        let mut buf = String::new();
-        'outer: while let Some(chunk) = up.next().await {
-            let Ok(b) = chunk else { break };
-            buf.push_str(&String::from_utf8_lossy(&b));
-            while let Some(i) = buf.find('\n') {
-                let line: String = buf.drain(..=i).collect();
-                let Some(data) = line.trim().strip_prefix("data:") else { continue };
-                let data = data.trim();
-                if data == "[DONE]" {
-                    continue;
-                }
-                if let Ok(v) = serde_json::from_str::<Value>(data) {
-                    for ev in conv.feed(&v) {
-                        if tx.send(Ok(Bytes::from(ev))).await.is_err() {
-                            break 'outer;
-                        }
-                    }
-                }
-            }
-        }
-        for ev in conv.finish() {
-            let _ = tx.send(Ok(Bytes::from(ev))).await;
-        }
-        let _ = gw.ledger.finish(row, 200, conv.input_tokens, conv.output_tokens);
-    });
-    let body = Body::from_stream(futures_util::stream::unfold(rx, |mut rx| async move { rx.recv().await.map(|c| (c, rx)) }));
-    Response::builder().status(StatusCode::OK).header(header::CONTENT_TYPE, "text/event-stream").body(body).unwrap()
 }
 
+/// Forwarded to the provider's native endpoint; not counted against the request quota.
 async fn count_tokens(State(gw): State<Arc<Gateway>>, headers: HeaderMap, body: Bytes) -> Response {
     if !gw.authorized(&headers) {
         return GwError::new(StatusCode::UNAUTHORIZED, "invalid_api_key", "本机入口的 API Key 不对").anthropic();
     }
-    let req: Value = serde_json::from_slice(&body).unwrap_or(Value::Null);
-    Json(json!({"input_tokens": anthropic::estimate_tokens(&req)})).into_response()
+    let mut req: Value = serde_json::from_slice(&body).unwrap_or(Value::Null);
+    let model = req.get("model").and_then(Value::as_str).unwrap_or_default().to_string();
+    let (acct, m) = match gw.candidates(&model, true) {
+        Ok(mut c) => c.remove(0),
+        Err(e) => return e.anthropic(),
+    };
+    let Some(key) = gw.secrets.get(&acct.id) else {
+        return GwError::new(StatusCode::UNAUTHORIZED, "missing_key", format!("{} 在钥匙串里没有 Key", acct.id)).anthropic();
+    };
+    req["model"] = json!(m);
+    let base = acct.anthropic_base_url.as_deref().unwrap_or_default().trim_end_matches('/').to_string();
+    let resp = match gw
+        .client
+        .post(format!("{base}/v1/messages/count_tokens"))
+        .bearer_auth(&key)
+        .header("x-api-key", &key)
+        .header("anthropic-version", "2023-06-01")
+        .json(&req)
+        .send()
+        .await
+    {
+        Ok(r) => r,
+        Err(e) => return GwError::new(StatusCode::BAD_GATEWAY, "upstream_unreachable", format!("连接 {} 失败：{e}", acct.label)).anthropic(),
+    };
+    let status = status_of(&resp);
+    let ct = content_type(&resp);
+    let bytes = resp.bytes().await.unwrap_or_default();
+    Response::builder().status(status).header(header::CONTENT_TYPE, ct).body(Body::from(bytes)).unwrap()
 }
 
 #[cfg(test)]
@@ -572,7 +562,14 @@ mod tests {
                     .into_response()
                 }),
             )
-            .route("/v1/models", get(|| async { Json(json!({"data": [{"id": "a:free"}, {"id": "b"}]})) }));
+            .route("/v1/models", get(|| async { Json(json!({"data": [{"id": "a:free"}, {"id": "b"}]})) }))
+            .route(
+                "/v1/messages",
+                post(|Json(v): Json<Value>| async move {
+                    Json(json!({"id": "msg_1", "type": "message", "role": "assistant", "model": v["model"],
+                        "content": [{"type": "text", "text": "hi"}], "stop_reason": "end_turn", "usage": {"input_tokens": 9, "output_tokens": 2}}))
+                }),
+            );
         let l = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
         let addr = l.local_addr().unwrap();
         tokio::spawn(async move { axum::serve(l, app).await.unwrap() });
@@ -644,35 +641,26 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn anthropic_messages_converted() {
+    async fn claude_needs_native_endpoint() {
         let base = mock_upstream().await;
-        let (gw, url) = start(vec![acct("a", &base, 5.0)]).await;
+        let root = base.trim_end_matches("/v1").to_string();
+        let mut native = acct("n", &base, 5.0);
+        native.anthropic_base_url = Some(root);
+        let (gw, url) = start(vec![acct("a", &base, 5.0), native]).await;
         let c = reqwest::Client::new();
-        let r = c
-            .post(format!("{url}/v1/messages"))
-            .header("x-api-key", "local-key")
-            .json(&json!({"model": "m1", "max_tokens": 10, "messages": [{"role": "user", "content": "hi"}]}))
-            .send()
-            .await
-            .unwrap();
+        let body = json!({"model": "m1", "max_tokens": 10, "messages": [{"role": "user", "content": "hi"}]});
+        // Skips account "a" (no native endpoint) and forwards to "n" unchanged.
+        let r = c.post(format!("{url}/v1/messages")).header("x-api-key", "local-key").json(&body).send().await.unwrap();
+        assert_eq!(r.status(), 200);
         let v: Value = r.json().await.unwrap();
         assert_eq!(v["type"], "message");
-        assert_eq!(v["content"][0]["text"], "hello");
-        assert_eq!(v["usage"]["input_tokens"], 7);
-
-        let r = c
-            .post(format!("{url}/v1/messages"))
-            .header("x-api-key", "local-key")
-            .json(&json!({"model": "m1", "max_tokens": 10, "stream": true, "messages": [{"role": "user", "content": "hi"}]}))
-            .send()
-            .await
-            .unwrap();
-        let s = r.text().await.unwrap();
-        assert!(s.contains("event: message_start"));
-        assert!(s.contains("\"text\":\"hi\""));
-        assert!(s.contains("event: message_stop"));
-        tokio::time::sleep(std::time::Duration::from_millis(50)).await;
-        assert_eq!(gw.usage()[0].today_tokens, 10 + 3);
+        assert_eq!(v["usage"]["input_tokens"], 9);
+        assert_eq!(gw.usage()[1].today_tokens, 9 + 2);
+        // Pinning an account without a native endpoint is an error, not a conversion.
+        let r = c.post(format!("{url}/v1/messages")).header("x-api-key", "local-key").json(&json!({"model": "a/m1", "max_tokens": 5, "messages": []})).send().await.unwrap();
+        assert_eq!(r.status(), 400);
+        let v: Value = r.json().await.unwrap();
+        assert_eq!(v["error"]["type"], "invalid_request_error");
     }
 
     #[tokio::test]

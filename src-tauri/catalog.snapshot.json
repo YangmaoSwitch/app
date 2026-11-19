@@ -1,6 +1,6 @@
 {
  "version": 1,
- "generated_at": "2026-11-19T08:57:57+00:00",
+ "generated_at": "2026-11-19T12:24:38+00:00",
  "count": 14,
  "providers": [
   {
@@ -121,9 +121,11 @@
    "summary": "每天赠送积分，12 个免费模型共用。",
    "api": {
     "protocol": [
-     "openai"
+     "openai",
+     "anthropic"
     ],
-    "base_url": "https://developer.amd.com.cn/radeon/api/v1"
+    "base_url": "https://developer.amd.com.cn/radeon/api/v1",
+    "anthropic_base_url": "https://developer.amd.com.cn/radeon/api"
    },
    "signup": {
     "url": "https://developer.amd.com.cn/login",
@@ -537,9 +539,11 @@
    "summary": "部分模型长期免费（按模型限速）；实名送代金券。",
    "api": {
     "protocol": [
-     "openai"
+     "openai",
+     "anthropic"
     ],
     "base_url": "https://api.siliconflow.cn/v1",
+    "anthropic_base_url": "https://api.siliconflow.cn",
     "free_models": [
      "GLM-Z1-9B",
      "Hunyuan-MT-7B",
@@ -685,9 +689,11 @@
    "summary": "GLM Flash 系列模型永久免费。",
    "api": {
     "protocol": [
-     "openai"
+     "openai",
+     "anthropic"
     ],
     "base_url": "https://open.bigmodel.cn/api/paas/v4",
+    "anthropic_base_url": "https://open.bigmodel.cn/api/anthropic",
     "free_models": [
      "GLM-4.7-Flash",
      "GLM-4-Flash-250414",
