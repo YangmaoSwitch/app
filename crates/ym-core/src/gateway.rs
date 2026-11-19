@@ -1,9 +1,13 @@
-//! Local OpenAI-compatible gateway.
+//! Local gateway: OpenAI-compatible (`/v1/chat/completions`, ...) and
+//! Anthropic-compatible (`/v1/messages`) entry points on 127.0.0.1.
 //!
-//! Clients call `http://127.0.0.1:<port>/v1/...` with `model = "<account>/<upstream model>"`.
-//! The gateway checks the local limits for that account, forwards the request
-//! unchanged (apart from the model name and asking for usage in streams) to the
-//! provider with the user's own key, and records usage in the local ledger.
+//! * Clients authenticate with the local API key (`Authorization: Bearer` or `x-api-key`).
+//! * `model` is the provider's own model id. The gateway picks an enabled account that
+//!   offers it, skipping accounts that hit their local cap or were rate limited, and
+//!   falls through to the next account. `<account>/<model>` pins a specific account.
+//! * Requests are forwarded with the user's own key; usage is recorded locally.
+//! * Claude-format requests go to the provider's native Anthropic endpoint when it has
+//!   one, otherwise they are converted to OpenAI format and back.
 
 use std::net::SocketAddr;
 use std::sync::{Arc, RwLock};
@@ -20,11 +24,13 @@ use serde::Serialize;
 use serde_json::{json, Value};
 
 use crate::accounts::{Account, SecretStore};
+use crate::anthropic;
 use crate::ledger::Ledger;
 use crate::limits::{Limit, Unit};
 
 pub struct Gateway {
     accounts: RwLock<Vec<Account>>,
+    api_key: RwLock<String>,
     ledger: Arc<Ledger>,
     secrets: Arc<dyn SecretStore>,
     client: reqwest::Client,
@@ -54,35 +60,148 @@ pub struct AccountUsage {
     pub today_tokens: u64,
 }
 
+#[derive(Debug, Clone, Serialize)]
+pub struct ModelEntry {
+    pub id: String,
+    pub accounts: Vec<String>,
+}
+
+/// Error raised before a response from the provider is available.
+struct GwError {
+    status: StatusCode,
+    code: &'static str,
+    message: String,
+}
+
+impl GwError {
+    fn new(status: StatusCode, code: &'static str, message: impl Into<String>) -> Self {
+        Self { status, code, message: message.into() }
+    }
+
+    fn openai(self) -> Response {
+        (self.status, Json(json!({"error": {"message": self.message, "type": "yangmao_switch", "code": self.code}}))).into_response()
+    }
+
+    fn anthropic(self) -> Response {
+        let kind = match self.status {
+            StatusCode::TOO_MANY_REQUESTS => "rate_limit_error",
+            StatusCode::UNAUTHORIZED => "authentication_error",
+            StatusCode::NOT_FOUND => "not_found_error",
+            StatusCode::BAD_REQUEST => "invalid_request_error",
+            _ => "api_error",
+        };
+        (self.status, Json(json!({"type": "error", "error": {"type": kind, "message": self.message}}))).into_response()
+    }
+}
+
+/// A request that has been accepted by one account's upstream.
+struct Accepted {
+    resp: reqwest::Response,
+    row: i64,
+    native_anthropic: bool,
+}
+
+/// List the model ids an OpenAI-compatible provider offers.
+pub async fn fetch_models(client: &reqwest::Client, base_url: &str, key: &str) -> anyhow::Result<Vec<String>> {
+    let v: Value = client.get(format!("{base_url}/models")).bearer_auth(key).send().await?.error_for_status()?.json().await?;
+    let mut ids: Vec<String> = v
+        .get("data")
+        .and_then(Value::as_array)
+        .map(|a| a.iter().filter_map(|m| m.get("id").and_then(Value::as_str).map(str::to_string)).collect())
+        .unwrap_or_default();
+    ids.sort();
+    ids.dedup();
+    Ok(ids)
+}
+
 impl Gateway {
-    pub fn new(accounts: Vec<Account>, ledger: Arc<Ledger>, secrets: Arc<dyn SecretStore>) -> Arc<Self> {
+    pub fn new(accounts: Vec<Account>, api_key: String, ledger: Arc<Ledger>, secrets: Arc<dyn SecretStore>) -> Arc<Self> {
         let client = reqwest::Client::builder()
             .user_agent(concat!("YangmaoSwitch/", env!("CARGO_PKG_VERSION")))
             .build()
             .expect("http client");
-        Arc::new(Self { accounts: RwLock::new(accounts), ledger, secrets, client, reserve: tokio::sync::Mutex::new(()) })
+        Arc::new(Self {
+            accounts: RwLock::new(accounts),
+            api_key: RwLock::new(api_key),
+            ledger,
+            secrets,
+            client,
+            reserve: tokio::sync::Mutex::new(()),
+        })
     }
 
     pub fn set_accounts(&self, accounts: Vec<Account>) {
         *self.accounts.write().unwrap() = accounts;
     }
 
+    pub fn set_api_key(&self, key: String) {
+        *self.api_key.write().unwrap() = key;
+    }
+
     pub fn ledger(&self) -> &Ledger {
         &self.ledger
     }
 
-    fn account(&self, id: &str) -> Option<Account> {
-        self.accounts.read().unwrap().iter().find(|a| a.id == id).cloned()
+    pub fn client(&self) -> &reqwest::Client {
+        &self.client
+    }
+
+    fn authorized(&self, headers: &HeaderMap) -> bool {
+        let expected = self.api_key.read().unwrap().clone();
+        if expected.is_empty() {
+            return true;
+        }
+        let bearer = headers
+            .get(header::AUTHORIZATION)
+            .and_then(|v| v.to_str().ok())
+            .and_then(|v| v.strip_prefix("Bearer ").or_else(|| v.strip_prefix("bearer ")));
+        let x_key = headers.get("x-api-key").and_then(|v| v.to_str().ok());
+        bearer.map(str::trim) == Some(expected.as_str()) || x_key.map(str::trim) == Some(expected.as_str())
+    }
+
+    /// Models available through the gateway (plain ids, with the accounts offering them).
+    pub fn models(&self) -> Vec<ModelEntry> {
+        let accounts = self.accounts.read().unwrap().clone();
+        let mut out: Vec<ModelEntry> = Vec::new();
+        for a in accounts.iter().filter(|a| a.enabled) {
+            for m in a.models.iter().filter(|m| a.keep_model(m)) {
+                match out.iter_mut().find(|e| &e.id == m) {
+                    Some(e) => e.accounts.push(a.id.clone()),
+                    None => out.push(ModelEntry { id: m.clone(), accounts: vec![a.id.clone()] }),
+                }
+            }
+        }
+        out.sort_by(|a, b| a.id.cmp(&b.id));
+        out
+    }
+
+    /// Accounts that can serve `model`, in priority order, with the upstream model id.
+    fn candidates(&self, model: &str) -> Result<Vec<(Account, String)>, GwError> {
+        let accounts = self.accounts.read().unwrap().clone();
+        if let Some((prefix, rest)) = model.split_once('/') {
+            if let Some(a) = accounts.iter().find(|a| a.id == prefix) {
+                if !a.enabled {
+                    return Err(GwError::new(StatusCode::FORBIDDEN, "account_disabled", format!("账号 {prefix} 已停用")));
+                }
+                return Ok(vec![(a.clone(), rest.to_string())]);
+            }
+        }
+        let found: Vec<(Account, String)> = accounts.iter().filter(|a| a.serves(model)).map(|a| (a.clone(), model.to_string())).collect();
+        if found.is_empty() {
+            return Err(GwError::new(
+                StatusCode::NOT_FOUND,
+                "model_not_found",
+                format!("已启用的账号里没有提供模型 {model}。可以用 GET /v1/models 查看可用模型，或写成 <账号>/<模型> 指定账号"),
+            ));
+        }
+        Ok(found)
     }
 
     /// First limit that would be exceeded by one more request, if any.
     fn exceeded(&self, acct: &Account, now: DateTime<Utc>) -> anyhow::Result<Option<(Limit, u64)>> {
         for l in &acct.limits {
             let t = self.ledger.totals_since(&acct.id, l.window.start(now, acct.added_at))?;
-            let used = match l.unit {
-                Unit::Requests => t.requests,
-                Unit::Tokens => t.tokens,
-            };
+            let used = if l.unit == Unit::Requests { t.requests } else { t.tokens };
             let over = match l.unit {
                 Unit::Requests => (used + 1) as f64 > l.cap,
                 Unit::Tokens => used as f64 >= l.cap,
@@ -92,6 +211,72 @@ impl Gateway {
             }
         }
         Ok(None)
+    }
+
+    /// Try candidates in order until one upstream accepts the request.
+    /// `build(account, upstream_model)` returns (url, body, native_anthropic).
+    async fn dispatch(&self, cands: Vec<(Account, String)>, build: impl Fn(&Account, &str) -> (String, Value, bool)) -> Result<Accepted, GwError> {
+        let mut reasons: Vec<String> = Vec::new();
+        for (acct, model) in cands {
+            let row = {
+                let _g = self.reserve.lock().await;
+                let now = Utc::now();
+                if let Ok(Some((until, why))) = self.ledger.blocked_until(&acct.id, now) {
+                    reasons.push(format!("{} 暂停到 {}（{why}）", acct.id, until.with_timezone(&chrono::Local).format("%H:%M")));
+                    continue;
+                }
+                match self.exceeded(&acct, now) {
+                    Ok(Some((l, used))) => {
+                        let reset = l.window.next_reset(now, acct.added_at).map(|t| format!("，{} 重置", t.with_timezone(&chrono::Local).format("%m-%d %H:%M"))).unwrap_or_default();
+                        reasons.push(format!("{} 已用到本地上限 {used}/{}（{}）{reset}", acct.id, l.cap, l.label));
+                        continue;
+                    }
+                    Ok(None) => {}
+                    Err(e) => return Err(GwError::new(StatusCode::INTERNAL_SERVER_ERROR, "ledger", e.to_string())),
+                }
+                match self.ledger.begin(&acct.id, &model, now) {
+                    Ok(r) => r,
+                    Err(e) => return Err(GwError::new(StatusCode::INTERNAL_SERVER_ERROR, "ledger", e.to_string())),
+                }
+            };
+            let Some(key) = self.secrets.get(&acct.id) else {
+                let _ = self.ledger.cancel(row);
+                reasons.push(format!("{} 在钥匙串里没有 Key", acct.id));
+                continue;
+            };
+            let (url, body, native) = build(&acct, &model);
+            let mut req = self.client.post(&url).bearer_auth(&key).json(&body);
+            if native {
+                req = req.header("x-api-key", &key).header("anthropic-version", "2023-06-01");
+            }
+            let resp = match req.send().await {
+                Ok(r) => r,
+                Err(e) => {
+                    let _ = self.ledger.cancel(row);
+                    reasons.push(format!("{} 连接失败：{e}", acct.id));
+                    continue;
+                }
+            };
+            let status = resp.status().as_u16();
+            let now = Utc::now();
+            if status == 429 || status == 402 {
+                let (dur, why) = if status == 429 {
+                    let secs = resp.headers().get("retry-after").and_then(|v| v.to_str().ok()).and_then(|v| v.trim().parse::<i64>().ok()).unwrap_or(60);
+                    (Duration::seconds(secs), "平台返回 429")
+                } else {
+                    (Duration::hours(1), "平台返回 402（额度或余额不足）")
+                };
+                let _ = self.ledger.block(&acct.id, now + dur, why);
+                let _ = self.ledger.cancel(row);
+                reasons.push(format!("{} {why}", acct.id));
+                continue;
+            }
+            if !resp.status().is_success() {
+                let _ = self.ledger.cancel(row);
+            }
+            return Ok(Accepted { resp, row, native_anthropic: native });
+        }
+        Err(GwError::new(StatusCode::TOO_MANY_REQUESTS, "local_quota_reached", format!("没有可用的账号：{}", reasons.join("；"))))
     }
 
     pub fn usage(&self) -> Vec<AccountUsage> {
@@ -135,11 +320,13 @@ impl Gateway {
         Router::new()
             .route("/health", get(|| async { "ok" }))
             .route("/v1/models", get(list_models))
-            .route("/v1/{*path}", post(forward))
+            .route("/v1/messages", post(messages))
+            .route("/v1/messages/count_tokens", post(count_tokens))
+            .route("/v1/{*path}", post(openai))
             .with_state(self.clone())
     }
 
-    /// Bind on 127.0.0.1 only and serve in the background. Returns the bound address.
+    /// Bind on 127.0.0.1 only and serve in the background.
     pub async fn serve(self: &Arc<Self>, port: u16) -> anyhow::Result<(SocketAddr, tokio::task::JoinHandle<()>)> {
         let listener = tokio::net::TcpListener::bind(("127.0.0.1", port)).await?;
         let addr = listener.local_addr()?;
@@ -153,139 +340,44 @@ impl Gateway {
     }
 }
 
-fn error(status: StatusCode, code: &str, message: String) -> Response {
-    (status, Json(json!({"error": {"message": message, "type": "yangmao_switch", "code": code}}))).into_response()
-}
-
-async fn list_models(State(gw): State<Arc<Gateway>>) -> Json<Value> {
-    let accounts = gw.accounts.read().unwrap().clone();
-    let data: Vec<Value> = accounts
-        .iter()
-        .filter(|a| a.enabled)
-        .map(|a| json!({"id": format!("{}/<model>", a.id), "object": "model", "owned_by": a.provider_id}))
-        .collect();
-    Json(json!({"object": "list", "data": data}))
-}
-
 fn usage_from(v: &Value) -> Option<(u64, u64)> {
-    let u = v.get("usage")?;
+    let u = v.get("usage").or_else(|| v.pointer("/message/usage"))?;
     if u.is_null() {
         return None;
     }
     let get = |k: &str| u.get(k).and_then(Value::as_u64);
-    let prompt = get("prompt_tokens").or_else(|| get("input_tokens")).unwrap_or(0);
-    let completion = get("completion_tokens").or_else(|| get("output_tokens")).unwrap_or(0);
-    Some((prompt, completion))
+    Some((get("prompt_tokens").or_else(|| get("input_tokens")).unwrap_or(0), get("completion_tokens").or_else(|| get("output_tokens")).unwrap_or(0)))
 }
 
-fn retry_after(headers: &reqwest::header::HeaderMap) -> Option<i64> {
-    headers.get("retry-after")?.to_str().ok()?.trim().parse::<i64>().ok()
+fn content_type(resp: &reqwest::Response) -> String {
+    resp.headers().get(reqwest::header::CONTENT_TYPE).and_then(|v| v.to_str().ok()).unwrap_or("application/json").to_string()
 }
 
-async fn forward(State(gw): State<Arc<Gateway>>, Path(path): Path<String>, _headers: HeaderMap, body: Bytes) -> Response {
-    let mut req: Value = match serde_json::from_slice(&body) {
-        Ok(v) => v,
-        Err(e) => return error(StatusCode::BAD_REQUEST, "invalid_json", format!("请求体不是合法 JSON：{e}")),
-    };
-    let Some(model) = req.get("model").and_then(Value::as_str).map(str::to_string) else {
-        return error(StatusCode::BAD_REQUEST, "missing_model", "缺少 model 字段，格式为 <账号>/<模型>".into());
-    };
-    let Some((account_id, upstream_model)) = model.split_once('/') else {
-        return error(StatusCode::BAD_REQUEST, "bad_model", format!("model 应写成 <账号>/<模型>，例如 openrouter/xxx:free，收到：{model}"));
-    };
-    let Some(acct) = gw.account(account_id) else {
-        return error(StatusCode::NOT_FOUND, "unknown_account", format!("没有名为 {account_id} 的账号"));
-    };
-    if !acct.enabled {
-        return error(StatusCode::FORBIDDEN, "account_disabled", format!("账号 {account_id} 已停用"));
-    }
-    let Some(key) = gw.secrets.get(&acct.id) else {
-        return error(StatusCode::UNAUTHORIZED, "missing_key", format!("账号 {account_id} 在本机钥匙串里没有 Key"));
-    };
+fn status_of(resp: &reqwest::Response) -> StatusCode {
+    StatusCode::from_u16(resp.status().as_u16()).unwrap_or(StatusCode::BAD_GATEWAY)
+}
 
-    // Check limits and reserve a slot atomically.
-    let row = {
-        let _guard = gw.reserve.lock().await;
-        let now = Utc::now();
-        match gw.ledger.blocked_until(&acct.id, now) {
-            Ok(Some((until, reason))) => {
-                return error(
-                    StatusCode::TOO_MANY_REQUESTS,
-                    "provider_limited",
-                    format!("账号 {account_id} 暂停到 {}（{reason}）", until.to_rfc3339()),
-                )
-            }
-            Ok(None) => {}
-            Err(e) => return error(StatusCode::INTERNAL_SERVER_ERROR, "ledger", e.to_string()),
-        }
-        match gw.exceeded(&acct, now) {
-            Ok(Some((limit, used))) => {
-                let reset = limit.window.next_reset(now, acct.added_at).map(|t| format!("，{} 重置", t.to_rfc3339())).unwrap_or_default();
-                return error(
-                    StatusCode::TOO_MANY_REQUESTS,
-                    "local_quota_reached",
-                    format!("账号 {account_id} 已用到本地上限：{used}/{}（免费额度 {}，按 {:.0}% 留余量）{reset}", limit.cap, limit.label, acct.margin * 100.0),
-                );
-            }
-            Ok(None) => {}
-            Err(e) => return error(StatusCode::INTERNAL_SERVER_ERROR, "ledger", e.to_string()),
-        }
-        match gw.ledger.begin(&acct.id, upstream_model, now) {
-            Ok(r) => r,
-            Err(e) => return error(StatusCode::INTERNAL_SERVER_ERROR, "ledger", e.to_string()),
-        }
-    };
-
-    req["model"] = Value::String(upstream_model.to_string());
-    let stream = req.get("stream").and_then(Value::as_bool).unwrap_or(false);
-    if stream && path.ends_with("chat/completions") && req.get("stream_options").is_none() {
-        // Needed to count tokens for streaming responses.
-        req["stream_options"] = json!({"include_usage": true});
-    }
-
-    let url = format!("{}/{}", acct.base_url, path);
-    let resp = match gw.client.post(&url).bearer_auth(&key).json(&req).send().await {
-        Ok(r) => r,
-        Err(e) => {
-            let _ = gw.ledger.cancel(row);
-            return error(StatusCode::BAD_GATEWAY, "upstream_unreachable", format!("连接 {} 失败：{e}", acct.base_url));
-        }
-    };
-
-    let status = resp.status();
-    let now = Utc::now();
-    if status.as_u16() == 429 {
-        let secs = retry_after(resp.headers()).unwrap_or(60);
-        let _ = gw.ledger.block(&acct.id, now + Duration::seconds(secs), "平台返回 429");
-        let _ = gw.ledger.cancel(row);
-    } else if status.as_u16() == 402 {
-        let _ = gw.ledger.block(&acct.id, now + Duration::hours(1), "平台返回 402（额度或余额不足）");
-        let _ = gw.ledger.cancel(row);
-    } else if !status.is_success() {
-        let _ = gw.ledger.cancel(row);
-    }
-
-    let content_type = resp.headers().get(reqwest::header::CONTENT_TYPE).and_then(|v| v.to_str().ok()).unwrap_or("application/json").to_string();
-    let out_status = StatusCode::from_u16(status.as_u16()).unwrap_or(StatusCode::BAD_GATEWAY);
-
-    if !status.is_success() || !stream {
-        let bytes = resp.bytes().await.unwrap_or_default();
-        if status.is_success() {
+/// Pass the upstream body through unchanged, recording usage found in it.
+async fn passthrough(gw: Arc<Gateway>, a: Accepted, stream: bool) -> Response {
+    let status = status_of(&a.resp);
+    let ct = content_type(&a.resp);
+    let ok = a.resp.status().is_success();
+    if !ok || !stream {
+        let bytes = a.resp.bytes().await.unwrap_or_default();
+        if ok {
             let (p, c) = serde_json::from_slice::<Value>(&bytes).ok().and_then(|v| usage_from(&v)).unwrap_or((0, 0));
-            let _ = gw.ledger.finish(row, status.as_u16(), p, c);
+            let _ = gw.ledger.finish(a.row, status.as_u16(), p, c);
         }
-        return Response::builder().status(out_status).header(header::CONTENT_TYPE, content_type).body(Body::from(bytes)).unwrap();
+        return Response::builder().status(status).header(header::CONTENT_TYPE, ct).body(Body::from(bytes)).unwrap();
     }
-
-    // Streaming: pass bytes through and pick usage out of the SSE events.
     let (tx, rx) = tokio::sync::mpsc::channel::<Result<Bytes, std::io::Error>>(64);
-    let gw2 = gw.clone();
+    let row = a.row;
     let code = status.as_u16();
     tokio::spawn(async move {
-        let mut upstream = resp.bytes_stream();
+        let mut up = a.resp.bytes_stream();
         let mut buf = String::new();
         let mut usage = (0u64, 0u64);
-        while let Some(chunk) = upstream.next().await {
+        while let Some(chunk) = up.next().await {
             match chunk {
                 Ok(b) => {
                     buf.push_str(&String::from_utf8_lossy(&b));
@@ -309,10 +401,147 @@ async fn forward(State(gw): State<Arc<Gateway>>, Path(path): Path<String>, _head
                 }
             }
         }
-        let _ = gw2.ledger.finish(row, code, usage.0, usage.1);
+        let _ = gw.ledger.finish(row, code, usage.0, usage.1);
     });
     let body = Body::from_stream(futures_util::stream::unfold(rx, |mut rx| async move { rx.recv().await.map(|c| (c, rx)) }));
-    Response::builder().status(out_status).header(header::CONTENT_TYPE, content_type).body(body).unwrap()
+    Response::builder().status(status).header(header::CONTENT_TYPE, ct).body(body).unwrap()
+}
+
+async fn list_models(State(gw): State<Arc<Gateway>>, headers: HeaderMap) -> Response {
+    if !gw.authorized(&headers) {
+        return GwError::new(StatusCode::UNAUTHORIZED, "invalid_api_key", "本机入口的 API Key 不对，请在羊毛switch“接入工具”页复制").openai();
+    }
+    let data: Vec<Value> = gw
+        .models()
+        .into_iter()
+        .map(|m| json!({"id": m.id, "object": "model", "owned_by": m.accounts.join(","), "type": "model", "display_name": m.id}))
+        .collect();
+    Json(json!({"object": "list", "data": data, "has_more": false})).into_response()
+}
+
+async fn openai(State(gw): State<Arc<Gateway>>, Path(path): Path<String>, headers: HeaderMap, body: Bytes) -> Response {
+    if !gw.authorized(&headers) {
+        return GwError::new(StatusCode::UNAUTHORIZED, "invalid_api_key", "本机入口的 API Key 不对，请在羊毛switch“接入工具”页复制").openai();
+    }
+    let req: Value = match serde_json::from_slice(&body) {
+        Ok(v) => v,
+        Err(e) => return GwError::new(StatusCode::BAD_REQUEST, "invalid_json", format!("请求体不是合法 JSON：{e}")).openai(),
+    };
+    let Some(model) = req.get("model").and_then(Value::as_str).map(str::to_string) else {
+        return GwError::new(StatusCode::BAD_REQUEST, "missing_model", "缺少 model 字段").openai();
+    };
+    let cands = match gw.candidates(&model) {
+        Ok(c) => c,
+        Err(e) => return e.openai(),
+    };
+    let stream = req.get("stream").and_then(Value::as_bool).unwrap_or(false);
+    let is_chat = path.ends_with("chat/completions");
+    let accepted = gw
+        .dispatch(cands, |acct, m| {
+            let mut b = req.clone();
+            b["model"] = json!(m);
+            if stream && is_chat && b.get("stream_options").is_none() {
+                b["stream_options"] = json!({"include_usage": true});
+            }
+            (format!("{}/{}", acct.base_url, path), b, false)
+        })
+        .await;
+    match accepted {
+        Ok(a) => passthrough(gw, a, stream).await,
+        Err(e) => e.openai(),
+    }
+}
+
+async fn messages(State(gw): State<Arc<Gateway>>, headers: HeaderMap, body: Bytes) -> Response {
+    if !gw.authorized(&headers) {
+        return GwError::new(StatusCode::UNAUTHORIZED, "invalid_api_key", "本机入口的 API Key 不对，请在羊毛switch“接入工具”页复制").anthropic();
+    }
+    let req: Value = match serde_json::from_slice(&body) {
+        Ok(v) => v,
+        Err(e) => return GwError::new(StatusCode::BAD_REQUEST, "invalid_json", format!("请求体不是合法 JSON：{e}")).anthropic(),
+    };
+    let Some(model) = req.get("model").and_then(Value::as_str).map(str::to_string) else {
+        return GwError::new(StatusCode::BAD_REQUEST, "missing_model", "缺少 model 字段").anthropic();
+    };
+    let cands = match gw.candidates(&model) {
+        Ok(c) => c,
+        Err(e) => return e.anthropic(),
+    };
+    let stream = req.get("stream").and_then(Value::as_bool).unwrap_or(false);
+    let accepted = gw
+        .dispatch(cands, |acct, m| match &acct.anthropic_base_url {
+            Some(base) => {
+                let mut b = req.clone();
+                b["model"] = json!(m);
+                (format!("{}/v1/messages", base.trim_end_matches('/')), b, true)
+            }
+            None => (format!("{}/chat/completions", acct.base_url), anthropic::request_to_openai(&req, m), false),
+        })
+        .await;
+    let a = match accepted {
+        Ok(a) => a,
+        Err(e) => return e.anthropic(),
+    };
+    if a.native_anthropic {
+        return passthrough(gw, a, stream).await;
+    }
+
+    // Converted: OpenAI response -> Anthropic response.
+    let status = status_of(&a.resp);
+    if !a.resp.status().is_success() {
+        let text = a.resp.text().await.unwrap_or_default();
+        let msg = serde_json::from_str::<Value>(&text)
+            .ok()
+            .and_then(|v| v.pointer("/error/message").and_then(Value::as_str).map(str::to_string))
+            .unwrap_or(text);
+        return GwError::new(status, "upstream_error", format!("平台返回 HTTP {}：{msg}", status.as_u16())).anthropic();
+    }
+    if !stream {
+        let v: Value = a.resp.json().await.unwrap_or(Value::Null);
+        let (p, c) = usage_from(&v).unwrap_or((0, 0));
+        let _ = gw.ledger.finish(a.row, status.as_u16(), p, c);
+        return Json(anthropic::response_from_openai(&v, &model)).into_response();
+    }
+    let (tx, rx) = tokio::sync::mpsc::channel::<Result<Bytes, std::io::Error>>(64);
+    let row = a.row;
+    tokio::spawn(async move {
+        let mut conv = anthropic::StreamConverter::new(&model);
+        let mut up = a.resp.bytes_stream();
+        let mut buf = String::new();
+        'outer: while let Some(chunk) = up.next().await {
+            let Ok(b) = chunk else { break };
+            buf.push_str(&String::from_utf8_lossy(&b));
+            while let Some(i) = buf.find('\n') {
+                let line: String = buf.drain(..=i).collect();
+                let Some(data) = line.trim().strip_prefix("data:") else { continue };
+                let data = data.trim();
+                if data == "[DONE]" {
+                    continue;
+                }
+                if let Ok(v) = serde_json::from_str::<Value>(data) {
+                    for ev in conv.feed(&v) {
+                        if tx.send(Ok(Bytes::from(ev))).await.is_err() {
+                            break 'outer;
+                        }
+                    }
+                }
+            }
+        }
+        for ev in conv.finish() {
+            let _ = tx.send(Ok(Bytes::from(ev))).await;
+        }
+        let _ = gw.ledger.finish(row, 200, conv.input_tokens, conv.output_tokens);
+    });
+    let body = Body::from_stream(futures_util::stream::unfold(rx, |mut rx| async move { rx.recv().await.map(|c| (c, rx)) }));
+    Response::builder().status(StatusCode::OK).header(header::CONTENT_TYPE, "text/event-stream").body(body).unwrap()
+}
+
+async fn count_tokens(State(gw): State<Arc<Gateway>>, headers: HeaderMap, body: Bytes) -> Response {
+    if !gw.authorized(&headers) {
+        return GwError::new(StatusCode::UNAUTHORIZED, "invalid_api_key", "本机入口的 API Key 不对").anthropic();
+    }
+    let req: Value = serde_json::from_slice(&body).unwrap_or(Value::Null);
+    Json(json!({"input_tokens": anthropic::estimate_tokens(&req)})).into_response()
 }
 
 #[cfg(test)]
@@ -328,61 +557,128 @@ mod tests {
     }
 
     async fn mock_upstream() -> String {
-        let app = Router::new().route(
-            "/v1/chat/completions",
-            post(|Json(v): Json<Value>| async move {
-                Json(json!({"id": "x", "model": v["model"], "choices": [], "usage": {"prompt_tokens": 7, "completion_tokens": 3}}))
-            }),
-        );
+        let app = Router::new()
+            .route(
+                "/v1/chat/completions",
+                post(|headers: HeaderMap, Json(v): Json<Value>| async move {
+                    let auth = headers.get("authorization").and_then(|h| h.to_str().ok()).unwrap_or("").to_string();
+                    if v["stream"] == true {
+                        let sse = "data: {\"id\":\"1\",\"choices\":[{\"delta\":{\"content\":\"hi\"}}]}\n\ndata: {\"choices\":[{\"delta\":{},\"finish_reason\":\"stop\"}]}\n\ndata: {\"choices\":[],\"usage\":{\"prompt_tokens\":2,\"completion_tokens\":1}}\n\ndata: [DONE]\n\n";
+                        return ([(header::CONTENT_TYPE, "text/event-stream")], sse.to_string()).into_response();
+                    }
+                    Json(json!({"id": "x", "model": v["model"], "auth": auth,
+                        "choices": [{"finish_reason": "stop", "message": {"role": "assistant", "content": "hello"}}],
+                        "usage": {"prompt_tokens": 7, "completion_tokens": 3}}))
+                    .into_response()
+                }),
+            )
+            .route("/v1/models", get(|| async { Json(json!({"data": [{"id": "a:free"}, {"id": "b"}]})) }));
         let l = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
         let addr = l.local_addr().unwrap();
         tokio::spawn(async move { axum::serve(l, app).await.unwrap() });
         format!("http://{addr}/v1")
     }
 
-    #[tokio::test]
-    async fn enforces_request_cap_and_records_tokens() {
-        let base = mock_upstream().await;
-        let acct = Account {
-            id: "demo".into(),
-            provider_id: "demo".into(),
-            label: "Demo".into(),
-            base_url: base,
+    fn acct(id: &str, base: &str, cap: f64) -> Account {
+        Account {
+            id: id.into(),
+            provider_id: id.into(),
+            label: id.into(),
+            base_url: base.into(),
             enabled: true,
             margin: 1.0,
-            limits: vec![Limit { unit: Unit::Requests, cap: 2.0, amount: 2.0, window: Window::Rolling { seconds: 60 }, label: "2 requests / minute".into() }],
+            limits: vec![Limit { unit: Unit::Requests, cap, amount: cap, window: Window::Rolling { seconds: 60 }, label: format!("{cap} requests / minute") }],
             added_at: Utc::now(),
-        };
-        let gw = Gateway::new(vec![acct], Arc::new(Ledger::in_memory().unwrap()), Arc::new(Keys));
-        let (addr, _h) = gw.serve(0).await.unwrap();
-        let c = reqwest::Client::new();
-        let url = format!("http://{addr}/v1/chat/completions");
-        let body = json!({"model": "demo/some-model:free", "messages": []});
-        for _ in 0..2 {
-            let r = c.post(&url).json(&body).send().await.unwrap();
-            assert_eq!(r.status(), 200);
-            let v: Value = r.json().await.unwrap();
-            assert_eq!(v["model"], "some-model:free");
+            anthropic_base_url: None,
+            model_suffix: None,
+            models: vec!["m1".into()],
         }
-        let r = c.post(&url).json(&body).send().await.unwrap();
-        assert_eq!(r.status(), 429);
-        let v: Value = r.json().await.unwrap();
-        assert_eq!(v["error"]["code"], "local_quota_reached");
-        let u = &gw.usage()[0];
-        assert_eq!(u.today_requests, 2);
-        assert_eq!(u.today_tokens, 20);
+    }
+
+    async fn start(accounts: Vec<Account>) -> (Arc<Gateway>, String) {
+        let gw = Gateway::new(accounts, "local-key".into(), Arc::new(Ledger::in_memory().unwrap()), Arc::new(Keys));
+        let (addr, _h) = gw.serve(0).await.unwrap();
+        (gw, format!("http://{addr}"))
     }
 
     #[tokio::test]
-    async fn rejects_unknown_account() {
-        let gw = Gateway::new(vec![], Arc::new(Ledger::in_memory().unwrap()), Arc::new(Keys));
-        let (addr, _h) = gw.serve(0).await.unwrap();
-        let r = reqwest::Client::new()
-            .post(format!("http://{addr}/v1/chat/completions"))
-            .json(&json!({"model": "nope/x"}))
+    async fn requires_local_key() {
+        let base = mock_upstream().await;
+        let (_gw, url) = start(vec![acct("a", &base, 5.0)]).await;
+        let c = reqwest::Client::new();
+        let r = c.post(format!("{url}/v1/chat/completions")).json(&json!({"model": "m1"})).send().await.unwrap();
+        assert_eq!(r.status(), 401);
+        let r = c.post(format!("{url}/v1/chat/completions")).header("x-api-key", "local-key").json(&json!({"model": "m1"})).send().await.unwrap();
+        assert_eq!(r.status(), 200);
+    }
+
+    #[tokio::test]
+    async fn falls_through_to_next_account_and_caps() {
+        let base = mock_upstream().await;
+        let (gw, url) = start(vec![acct("a", &base, 1.0), acct("b", &base, 1.0)]).await;
+        let c = reqwest::Client::new();
+        let call = || c.post(format!("{url}/v1/chat/completions")).bearer_auth("local-key").json(&json!({"model": "m1", "messages": []})).send();
+        assert_eq!(call().await.unwrap().status(), 200); // a
+        let v: Value = call().await.unwrap().json().await.unwrap(); // b
+        assert_eq!(v["model"], "m1");
+        assert_eq!(v["auth"], "Bearer test-key");
+        let r = call().await.unwrap();
+        assert_eq!(r.status(), 429);
+        let v: Value = r.json().await.unwrap();
+        assert_eq!(v["error"]["code"], "local_quota_reached");
+        let u = gw.usage();
+        assert_eq!(u.iter().map(|x| x.today_requests).sum::<u64>(), 2);
+        assert_eq!(u.iter().map(|x| x.today_tokens).sum::<u64>(), 20);
+    }
+
+    #[tokio::test]
+    async fn explicit_account_prefix_and_unknown_model() {
+        let base = mock_upstream().await;
+        let (_gw, url) = start(vec![acct("a", &base, 5.0)]).await;
+        let c = reqwest::Client::new();
+        let r = c.post(format!("{url}/v1/chat/completions")).bearer_auth("local-key").json(&json!({"model": "a/anything"})).send().await.unwrap();
+        let v: Value = r.json().await.unwrap();
+        assert_eq!(v["model"], "anything");
+        let r = c.post(format!("{url}/v1/chat/completions")).bearer_auth("local-key").json(&json!({"model": "nope"})).send().await.unwrap();
+        assert_eq!(r.status(), 404);
+    }
+
+    #[tokio::test]
+    async fn anthropic_messages_converted() {
+        let base = mock_upstream().await;
+        let (gw, url) = start(vec![acct("a", &base, 5.0)]).await;
+        let c = reqwest::Client::new();
+        let r = c
+            .post(format!("{url}/v1/messages"))
+            .header("x-api-key", "local-key")
+            .json(&json!({"model": "m1", "max_tokens": 10, "messages": [{"role": "user", "content": "hi"}]}))
             .send()
             .await
             .unwrap();
-        assert_eq!(r.status(), 404);
+        let v: Value = r.json().await.unwrap();
+        assert_eq!(v["type"], "message");
+        assert_eq!(v["content"][0]["text"], "hello");
+        assert_eq!(v["usage"]["input_tokens"], 7);
+
+        let r = c
+            .post(format!("{url}/v1/messages"))
+            .header("x-api-key", "local-key")
+            .json(&json!({"model": "m1", "max_tokens": 10, "stream": true, "messages": [{"role": "user", "content": "hi"}]}))
+            .send()
+            .await
+            .unwrap();
+        let s = r.text().await.unwrap();
+        assert!(s.contains("event: message_start"));
+        assert!(s.contains("\"text\":\"hi\""));
+        assert!(s.contains("event: message_stop"));
+        tokio::time::sleep(std::time::Duration::from_millis(50)).await;
+        assert_eq!(gw.usage()[0].today_tokens, 10 + 3);
+    }
+
+    #[tokio::test]
+    async fn fetches_models() {
+        let base = mock_upstream().await;
+        let ids = fetch_models(&reqwest::Client::new(), &base, "k").await.unwrap();
+        assert_eq!(ids, vec!["a:free".to_string(), "b".to_string()]);
     }
 }

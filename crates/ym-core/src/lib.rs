@@ -8,6 +8,7 @@
 //! * [`oauth`] – OAuth PKCE (loopback) helpers.
 
 pub mod accounts;
+pub mod anthropic;
 pub mod catalog;
 pub mod gateway;
 pub mod ledger;

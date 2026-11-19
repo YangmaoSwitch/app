@@ -16,7 +16,7 @@ import {
   Trash2,
   Zap,
 } from "lucide-react";
-import { api, Account, AccountUsage, Catalog, LimitUsage, OVERAGE, Provider, quotaParts, quotaText, REQUIRES, UsageRow } from "./api";
+import { api, Account, AccountUsage, Catalog, GatewayInfo, LimitUsage, ModelEntry, OVERAGE, Provider, quotaParts, quotaText, REQUIRES, UsageRow } from "./api";
 
 type Page = "catalog" | "accounts" | "usage" | "connect";
 type Notify = (ok: boolean, text: string) => void;
@@ -38,7 +38,7 @@ export default function App() {
   const [catalog, setCatalog] = useState<Catalog | null>(null);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [usage, setUsage] = useState<AccountUsage[]>([]);
-  const [gw, setGw] = useState<{ running: boolean; base_url: string | null } | null>(null);
+  const [gw, setGw] = useState<GatewayInfo | null>(null);
   const [toast, setToast] = useState<{ ok: boolean; text: string } | null>(null);
 
   const reload = useCallback(async () => setAccounts(await api.accounts()), []);
@@ -106,7 +106,7 @@ export default function App() {
         )}
         {page === "accounts" && <AccountsPage accounts={accounts} usage={usage} onChange={reload} notify={notify} onBrowse={() => go("catalog")} />}
         {page === "usage" && <UsagePage usage={usage} />}
-        {page === "connect" && <ConnectPage accounts={accounts} catalog={catalog} baseUrl={gw?.base_url ?? null} notify={notify} />}
+        {page === "connect" && <ConnectPage accounts={accounts} gw={gw} onGw={setGw} notify={notify} />}
       </main>
 
       {toast && (
@@ -121,20 +121,20 @@ export default function App() {
 
 /* ---------- shared ---------- */
 
-function GatewayCard({ gw, notify }: { gw: { running: boolean; base_url: string | null } | null; notify: Notify }) {
+function GatewayCard({ gw, notify }: { gw: GatewayInfo | null; notify: Notify }) {
   return (
     <div className="gateway">
       <div className="gateway-head">
         <span className={gw?.running ? "dot on" : "dot"} />
-        {gw?.running ? "本机入口运行中" : "本机入口未启动"}
+        {gw?.running ? "本机入口运行中" : gw?.error ? "端口被占用" : "本机入口未启动"}
       </div>
       {gw?.base_url && (
         <button
           className="gateway-url"
           title="复制 Base URL"
           onClick={async () => {
-            await navigator.clipboard.writeText(gw.base_url!);
-            notify(true, "已复制 Base URL");
+            await navigator.clipboard.writeText(`${gw.base_url}/v1`);
+            notify(true, "已复制 OpenAI Base URL");
           }}
         >
           <span className="mono">{gw.base_url.replace("http://", "")}</span>
@@ -574,7 +574,10 @@ function AccountsPage(props: { accounts: Account[]; usage: AccountUsage[]; onCha
                       {u?.blocked_until && <span className="chip danger">平台限流到 {new Date(u.blocked_until).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>}
                       {!a.enabled && <span className="chip">已停用</span>}
                     </div>
-                    <div className="desc mono">{a.base_url}</div>
+                    <div className="desc">
+                      <span className="mono">{a.base_url}</span> · {a.models.length > 0 ? `${a.models.length} 个模型` : "模型列表未获取"}
+                      {a.model_suffix ? `（只用 ${a.model_suffix} 结尾的免费模型）` : ""}
+                    </div>
                   </div>
                   <div className="meters">
                     {u && u.limits.length > 0 ? u.limits.slice(0, 2).map((l, i) => <Meter key={i} l={l} compact />) : <span className="muted small">按平台计量</span>}
@@ -632,6 +635,16 @@ function AccountsPage(props: { accounts: Account[]; usage: AccountUsage[]; onCha
                       </dd>
                       <dt>模型名</dt>
                       <dd className="mono">{a.id}/&lt;平台上的模型名&gt;</dd>
+                      <dt>使用顺序</dt>
+                      <dd>
+                        多个账号都有同一个模型时，按列表顺序使用，前一个用完自动换下一个。
+                        <button className="btn sm-inline" onClick={async () => { await api.moveAccount(a.id, -1); props.onChange(); }}>上移</button>
+                        <button className="btn sm-inline" onClick={async () => { await api.moveAccount(a.id, 1); props.onChange(); }}>下移</button>
+                      </dd>
+                      <dt>模型</dt>
+                      <dd>
+                        {a.models.length > 0 ? <span className="mono small">{a.models.slice(0, 8).join("、")}{a.models.length > 8 ? ` 等 ${a.models.length} 个` : ""}</span> : <span className="muted">还没有获取，点右上方的“测试连接”获取</span>}
+                      </dd>
                       <dt>添加时间</dt>
                       <dd className="num">{new Date(a.added_at).toLocaleString()}</dd>
                     </dl>
@@ -810,64 +823,201 @@ function UsagePage({ usage }: { usage: AccountUsage[] }) {
 
 /* ---------- 接入工具 ---------- */
 
-function CopyRow({ label, value, hint, notify }: { label: string; value: string; hint?: string; notify: Notify }) {
+function CopyRow({ label, value, hint, notify, mono = true, children }: { label: string; value: string; hint?: ReactNode; notify: Notify; mono?: boolean; children?: ReactNode }) {
   const [done, setDone] = useState(false);
   return (
     <div className="copy-row">
       <div>
         <span className="copy-label">{label}</span>
-        <code>{value}</code>
+        <code className={mono ? "" : "plain"}>{value}</code>
         {hint && <small className="muted">{hint}</small>}
       </div>
-      <button
-        className="btn"
-        onClick={async () => {
-          await navigator.clipboard.writeText(value);
-          setDone(true);
-          notify(true, `已复制${label}`);
-          window.setTimeout(() => setDone(false), 1500);
-        }}
-      >
-        {done ? <Check size={15} /> : <Copy size={15} />} {done ? "已复制" : "复制"}
-      </button>
+      <div className="copy-actions">
+        {children}
+        <button
+          className="btn"
+          onClick={async () => {
+            await navigator.clipboard.writeText(value);
+            setDone(true);
+            notify(true, `已复制${label}`);
+            window.setTimeout(() => setDone(false), 1500);
+          }}
+        >
+          {done ? <Check size={15} /> : <Copy size={15} />} {done ? "已复制" : "复制"}
+        </button>
+      </div>
     </div>
   );
 }
 
-function ConnectPage(props: { accounts: Account[]; catalog: Catalog | null; baseUrl: string | null; notify: Notify }) {
-  const base = props.baseUrl ?? "http://127.0.0.1:17890/v1";
-  const ex = props.accounts.find((a) => a.enabled) ?? props.accounts[0];
-  const free = ex && props.catalog?.providers.find((p) => p.id === ex.provider_id)?.api?.free_models?.[0];
-  const model = ex ? `${ex.id}/${free ?? "模型名"}` : "账号/模型名";
+function ConnectPage(props: { accounts: Account[]; gw: GatewayInfo | null; onGw: (g: GatewayInfo) => void; notify: Notify }) {
+  const gw = props.gw;
+  const [models, setModels] = useState<ModelEntry[]>([]);
+  const [port, setPort] = useState("");
+  const [editKey, setEditKey] = useState<string | null>(null);
+  const [tool, setTool] = useState<"openai" | "claude">("openai");
+  useEffect(() => {
+    api.models().then(setModels);
+  }, [props.accounts]);
+  useEffect(() => {
+    if (gw) setPort(String(gw.port));
+  }, [gw?.port]);
+  if (!gw) return null;
+
+  const root = gw.base_url ?? `http://127.0.0.1:${gw.port}`;
+  const model = models[0]?.id ?? "平台上的模型名";
+  const envPs = `$env:ANTHROPIC_BASE_URL="${root}"\n$env:ANTHROPIC_AUTH_TOKEN="${gw.api_key}"\n$env:ANTHROPIC_MODEL="${model}"\n$env:ANTHROPIC_DEFAULT_HAIKU_MODEL="${model}"\nclaude`;
+  const envSh = `export ANTHROPIC_BASE_URL=${root}\nexport ANTHROPIC_AUTH_TOKEN=${gw.api_key}\nexport ANTHROPIC_MODEL=${model}\nexport ANTHROPIC_DEFAULT_HAIKU_MODEL=${model}\nclaude`;
+
   return (
     <>
-      <PageHead title="接入工具" sub="在任何支持 OpenAI 接口的工具里，把地址换成本机入口即可。" />
+      <PageHead title="接入工具" sub="其他工具通过本机入口使用你的免费额度，OpenAI 和 Claude 两种接口都支持。" />
       <div className="connect">
+        {gw.error && (
+          <div className="notice danger">
+            <AlertTriangle size={16} /> {gw.error}
+          </div>
+        )}
         <section className="panel">
-          <h3>填这三项</h3>
-          <CopyRow label="Base URL" value={base} hint="只监听 127.0.0.1，外部访问不到" notify={props.notify} />
-          <CopyRow label="API Key" value="yangmao" hint="随便填，真正的 Key 由系统钥匙串提供" notify={props.notify} />
-          <CopyRow label="模型名" value={model} hint="斜杠前是账号名，后面是平台上的模型名" notify={props.notify} />
+          <h3>本机入口</h3>
+          <div className="copy-row">
+            <div>
+              <span className="copy-label">端口</span>
+              <span className="port-edit">
+                <span className="mono muted">127.0.0.1:</span>
+                <input className="mono" value={port} inputMode="numeric" onChange={(e) => setPort(e.target.value.replace(/\D/g, "").slice(0, 5))} />
+              </span>
+              <small className="muted">只监听本机，局域网和外网都访问不到。改端口后，已接入的工具也要跟着改。</small>
+            </div>
+            <div className="copy-actions">
+              <button
+                className="btn"
+                disabled={port === String(gw.port) && gw.running}
+                onClick={async () => {
+                  try {
+                    props.onGw(await api.setPort(Number(port)));
+                    props.notify(true, `本机入口已切换到端口 ${port}`);
+                  } catch (e) {
+                    props.notify(false, String(e));
+                  }
+                }}
+              >
+                应用
+              </button>
+            </div>
+          </div>
+          {editKey === null ? (
+            <CopyRow label="API Key" value={gw.api_key} hint="首次启动时随机生成，工具里填它才能访问本机入口" notify={props.notify}>
+              <button className="btn" onClick={() => setEditKey(gw.api_key)}>
+                自定义
+              </button>
+              <button
+                className="btn"
+                onClick={async () => {
+                  if (!window.confirm("重新生成后，已接入的工具需要换成新的 Key。继续？")) return;
+                  props.onGw(await api.setApiKey(null));
+                  props.notify(true, "已生成新的 API Key");
+                }}
+              >
+                <RefreshCw size={15} /> 重新生成
+              </button>
+            </CopyRow>
+          ) : (
+            <div className="copy-row">
+              <div>
+                <span className="copy-label">API Key</span>
+                <input className="mono key-input" autoFocus value={editKey} onChange={(e) => setEditKey(e.target.value)} />
+                <small className="muted">至少 8 个字符</small>
+              </div>
+              <div className="copy-actions">
+                <button className="btn" onClick={() => setEditKey(null)}>
+                  取消
+                </button>
+                <button
+                  className="btn primary"
+                  onClick={async () => {
+                    try {
+                      props.onGw(await api.setApiKey(editKey));
+                      setEditKey(null);
+                      props.notify(true, "API Key 已更新");
+                    } catch (e) {
+                      props.notify(false, String(e));
+                    }
+                  }}
+                >
+                  保存
+                </button>
+              </div>
+            </div>
+          )}
         </section>
+
         <section className="panel">
-          <h3>常见工具</h3>
-          <dl className="kv tools">
-            <dt>Cherry Studio</dt>
-            <dd>设置 → 模型服务 → 添加，类型选 OpenAI，填 Base URL 和 API Key，再添加模型名。</dd>
-            <dt>Cline / Roo Code</dt>
-            <dd>API Provider 选 OpenAI Compatible，依次填三项。</dd>
-            <dt>OpenAI SDK</dt>
-            <dd>
-              创建客户端时把 <code>base_url</code> 设为上面的地址。
-            </dd>
-          </dl>
+          <div className="panel-head">
+            <h3>在工具里填写</h3>
+            <Segmented
+              label="接口类型"
+              value={tool}
+              onChange={setTool}
+              options={[
+                ["openai", "OpenAI 接口"],
+                ["claude", "Claude 接口"],
+              ]}
+            />
+          </div>
+          {tool === "openai" ? (
+            <>
+              <CopyRow label="Base URL" value={`${root}/v1`} hint="Cherry Studio、Cline、OpenAI SDK 等" notify={props.notify} />
+              <CopyRow label="API Key" value={gw.api_key} notify={props.notify} />
+              <CopyRow label="模型名" value={model} hint="直接用平台上的模型名，见下方列表" notify={props.notify} />
+            </>
+          ) : (
+            <>
+              <CopyRow label="Base URL" value={root} hint="Claude Code、Anthropic SDK 等；不带 /v1" notify={props.notify} />
+              <CopyRow label="API Key" value={gw.api_key} hint="填在 ANTHROPIC_AUTH_TOKEN 或 x-api-key" notify={props.notify} />
+              <CopyRow label="Claude Code" value={envPs} mono hint="PowerShell 里粘贴运行；macOS / Linux 用右侧按钮复制" notify={props.notify}>
+                <button
+                  className="btn"
+                  onClick={async () => {
+                    await navigator.clipboard.writeText(envSh);
+                    props.notify(true, "已复制 macOS / Linux 命令");
+                  }}
+                >
+                  macOS / Linux
+                </button>
+              </CopyRow>
+              <p className="muted small">平台不支持 Claude 接口时，羊毛switch 会在本机把请求转换成 OpenAI 格式再发出去，工具调用（function calling）和流式输出都能用。</p>
+            </>
+          )}
         </section>
+
         <section className="panel">
-          <h3>用 curl 试一下</h3>
-          <pre>{`curl ${base}/chat/completions \\
-  -H "Content-Type: application/json" \\
-  -d '{"model":"${model}","messages":[{"role":"user","content":"你好"}]}'`}</pre>
-          <p className="muted small">到达本地上限时返回 HTTP 429，错误码 local_quota_reached，第二天（或窗口结束）自动恢复。</p>
+          <h3>
+            可用模型 <span className="muted num">{models.length}</span>
+          </h3>
+          <p className="muted small">
+            多个账号都有同一个模型时，按“我的账号”里的顺序使用，前一个到上限或被平台限流就自动换下一个。想固定用某个账号，模型名写成 <code>账号/模型名</code>。
+          </p>
+          {models.length === 0 ? (
+            <div className="empty small-empty">还没有可用模型。先添加账号，再在“我的账号”里点“测试连接”获取模型列表。</div>
+          ) : (
+            <div className="model-list">
+              {models.map((m) => (
+                <button
+                  key={m.id}
+                  className="model"
+                  title="点击复制模型名"
+                  onClick={async () => {
+                    await navigator.clipboard.writeText(m.id);
+                    props.notify(true, `已复制 ${m.id}`);
+                  }}
+                >
+                  <span className="mono">{m.id}</span>
+                  <span className="muted small">{m.accounts.join("、")}</span>
+                </button>
+              ))}
+            </div>
+          )}
         </section>
       </div>
     </>

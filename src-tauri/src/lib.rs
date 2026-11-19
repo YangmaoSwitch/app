@@ -2,18 +2,21 @@ use std::net::SocketAddr;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use tauri::{Manager, State};
 use tauri_plugin_opener::OpenerExt;
 use ym_core::accounts::{self, Account, AccountFile, SecretStore};
 use ym_core::catalog::{Catalog, CATALOG_URL};
-use ym_core::gateway::{AccountUsage, Gateway};
+use ym_core::gateway::{fetch_models, AccountUsage, Gateway, ModelEntry};
 use ym_core::ledger::Ledger;
 use ym_core::limits;
 
 const KEYCHAIN_SERVICE: &str = "yangmao-switch";
 const DEFAULT_PORT: u16 = 17890;
 const BUNDLED_CATALOG: &str = include_str!("../catalog.snapshot.json");
+const IDENTIFIER: &str = "io.github.yangmaoswitch.app";
+
+/* ---------- keychain ---------- */
 
 struct Keychain;
 
@@ -35,20 +38,59 @@ fn keychain_delete(account_id: &str) {
     }
 }
 
+/* ---------- settings ---------- */
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct Settings {
+    port: u16,
+    api_key: String,
+}
+
+fn random_key() -> String {
+    use rand::RngCore;
+    let mut b = [0u8; 18];
+    rand::thread_rng().fill_bytes(&mut b);
+    format!("ym-{}", b.iter().map(|x| format!("{x:02x}")).collect::<String>())
+}
+
+impl Settings {
+    fn load(path: &PathBuf) -> Self {
+        std::fs::read_to_string(path)
+            .ok()
+            .and_then(|s| serde_json::from_str(&s).ok())
+            .unwrap_or_else(|| Settings { port: DEFAULT_PORT, api_key: random_key() })
+    }
+    fn save(&self, path: &PathBuf) -> Result<(), String> {
+        std::fs::write(path, serde_json::to_vec_pretty(self).map_err(s)?).map_err(s)
+    }
+}
+
+/* ---------- state ---------- */
+
+struct Server {
+    addr: Option<SocketAddr>,
+    error: Option<String>,
+    handle: Option<tokio::task::JoinHandle<()>>,
+}
+
 struct AppState {
     data_dir: PathBuf,
     file: AccountFile,
     accounts: Mutex<Vec<Account>>,
     catalog: Mutex<Catalog>,
+    settings: Mutex<Settings>,
     gateway: Arc<Gateway>,
-    addr: Mutex<Option<SocketAddr>>,
+    server: Mutex<Server>,
 }
 
 impl AppState {
     fn persist(&self, accounts: &[Account]) -> Result<(), String> {
-        self.file.save(accounts).map_err(|e| e.to_string())?;
+        self.file.save(accounts).map_err(s)?;
         self.gateway.set_accounts(accounts.to_vec());
         Ok(())
+    }
+    fn settings_path(&self) -> PathBuf {
+        self.data_dir.join("settings.json")
     }
 }
 
@@ -58,13 +100,49 @@ fn s<E: std::fmt::Display>(e: E) -> String {
     e.to_string()
 }
 
+/// (Re)start the gateway on `port`. Never falls back to a random port, so client configs stay valid.
+async fn start_server(gw: &Arc<Gateway>, server: &Mutex<Server>, port: u16) -> Result<SocketAddr, String> {
+    if let Some(h) = server.lock().unwrap().handle.take() {
+        h.abort();
+    }
+    // Give the OS a moment to release the old socket.
+    tokio::time::sleep(std::time::Duration::from_millis(150)).await;
+    match gw.serve(port).await {
+        Ok((addr, handle)) => {
+            *server.lock().unwrap() = Server { addr: Some(addr), error: None, handle: Some(handle) };
+            Ok(addr)
+        }
+        Err(e) => {
+            let msg = format!("端口 {port} 无法使用（{e}），请在“接入工具”里换一个端口");
+            *server.lock().unwrap() = Server { addr: None, error: Some(msg.clone()), handle: None };
+            Err(msg)
+        }
+    }
+}
+
+/// Refresh the model list of one account from the provider.
+async fn refresh_models_inner(state: &AppState, id: &str) -> R<usize> {
+    let acct = state.accounts.lock().unwrap().iter().find(|a| a.id == id).cloned().ok_or("账号不存在")?;
+    let key = Keychain.get(id).ok_or("钥匙串里没有这个账号的 Key")?;
+    let ids = fetch_models(state.gateway.client(), &acct.base_url, &key).await.map_err(|e| format!("获取模型列表失败：{e}"))?;
+    let mut accounts = state.accounts.lock().unwrap();
+    let mut n = 0;
+    for a in accounts.iter_mut().filter(|a| a.id == id) {
+        a.models = ids.iter().filter(|m| a.keep_model(m)).cloned().collect();
+        n = a.models.len();
+    }
+    state.persist(&accounts)?;
+    Ok(n)
+}
+
+/* ---------- commands ---------- */
+
 #[tauri::command]
 async fn get_catalog(state: State<'_, AppState>, refresh: bool) -> R<Catalog> {
-    let cache = state.data_dir.join("catalog.json");
     if refresh {
         let text = reqwest::get(CATALOG_URL).await.map_err(s)?.error_for_status().map_err(s)?.text().await.map_err(s)?;
         let cat = Catalog::from_json(&text).map_err(s)?;
-        std::fs::write(&cache, &text).map_err(s)?;
+        std::fs::write(state.data_dir.join("catalog.json"), &text).map_err(s)?;
         *state.catalog.lock().unwrap() = cat.clone();
         return Ok(cat);
     }
@@ -84,8 +162,7 @@ fn add_account_inner(state: &AppState, provider_id: &str, key: &str, base_url: O
     let provider = state.catalog.lock().unwrap().provider(provider_id).cloned().ok_or_else(|| format!("目录里没有 {provider_id}"))?;
     let mut accounts = state.accounts.lock().unwrap();
     let id = accounts::next_id(provider_id, &accounts);
-    let base_url = base_url.filter(|b| !b.trim().is_empty());
-    let acct = Account::from_provider(id, &provider, base_url, 0.9).map_err(s)?;
+    let acct = Account::from_provider(id, &provider, base_url.filter(|b| !b.trim().is_empty()), 0.9).map_err(s)?;
     keychain_set(&acct.id, key)?;
     accounts.push(acct.clone());
     state.persist(&accounts)?;
@@ -93,8 +170,10 @@ fn add_account_inner(state: &AppState, provider_id: &str, key: &str, base_url: O
 }
 
 #[tauri::command]
-fn add_account(state: State<'_, AppState>, provider_id: String, key: String, base_url: Option<String>) -> R<Account> {
-    add_account_inner(&state, &provider_id, &key, base_url)
+async fn add_account(state: State<'_, AppState>, provider_id: String, key: String, base_url: Option<String>) -> R<Account> {
+    let acct = add_account_inner(&state, &provider_id, &key, base_url)?;
+    let _ = refresh_models_inner(&state, &acct.id).await;
+    Ok(state.accounts.lock().unwrap().iter().find(|a| a.id == acct.id).cloned().unwrap_or(acct))
 }
 
 #[tauri::command]
@@ -126,17 +205,30 @@ fn set_margin(state: State<'_, AppState>, id: String, margin: f64) -> R<()> {
     state.persist(&accounts)
 }
 
+/// Move an account up/down; earlier accounts are tried first.
+#[tauri::command]
+fn move_account(state: State<'_, AppState>, id: String, delta: i32) -> R<()> {
+    let mut accounts = state.accounts.lock().unwrap();
+    let Some(i) = accounts.iter().position(|a| a.id == id) else { return Ok(()) };
+    let j = (i as i32 + delta).clamp(0, accounts.len() as i32 - 1) as usize;
+    accounts.swap(i, j);
+    state.persist(&accounts)
+}
+
 #[tauri::command]
 async fn test_account(state: State<'_, AppState>, id: String) -> R<String> {
-    let acct = state.accounts.lock().unwrap().iter().find(|a| a.id == id).cloned().ok_or("账号不存在")?;
-    let key = Keychain.get(&id).ok_or("钥匙串里没有这个账号的 Key")?;
-    let r = reqwest::Client::new().get(format!("{}/models", acct.base_url)).bearer_auth(key).send().await.map_err(s)?;
-    let status = r.status();
-    if status.is_success() {
-        Ok(format!("连接正常（HTTP {}）", status.as_u16()))
-    } else {
-        Err(format!("平台返回 HTTP {}", status.as_u16()))
-    }
+    let n = refresh_models_inner(&state, &id).await?;
+    Ok(format!("连接正常，可用模型 {n} 个"))
+}
+
+#[tauri::command]
+async fn refresh_models(state: State<'_, AppState>, id: String) -> R<usize> {
+    refresh_models_inner(&state, &id).await
+}
+
+#[tauri::command]
+fn list_models(state: State<'_, AppState>) -> Vec<ModelEntry> {
+    state.gateway.models()
 }
 
 #[tauri::command]
@@ -153,12 +245,53 @@ fn recent_requests(state: State<'_, AppState>, limit: u32) -> R<Vec<ym_core::led
 struct GatewayInfo {
     running: bool,
     base_url: Option<String>,
+    port: u16,
+    api_key: String,
+    error: Option<String>,
+}
+
+fn info(state: &AppState) -> GatewayInfo {
+    let srv = state.server.lock().unwrap();
+    let st = state.settings.lock().unwrap();
+    GatewayInfo {
+        running: srv.addr.is_some(),
+        base_url: srv.addr.map(|a| format!("http://{a}")),
+        port: st.port,
+        api_key: st.api_key.clone(),
+        error: srv.error.clone(),
+    }
 }
 
 #[tauri::command]
 fn gateway_info(state: State<'_, AppState>) -> GatewayInfo {
-    let addr = *state.addr.lock().unwrap();
-    GatewayInfo { running: addr.is_some(), base_url: addr.map(|a| format!("http://{a}/v1")) }
+    info(&state)
+}
+
+#[tauri::command]
+async fn set_port(state: State<'_, AppState>, port: u16) -> R<GatewayInfo> {
+    if port < 1024 {
+        return Err("请使用 1024 以上的端口".into());
+    }
+    start_server(&state.gateway, &state.server, port).await?;
+    let mut st = state.settings.lock().unwrap().clone();
+    st.port = port;
+    st.save(&state.settings_path())?;
+    *state.settings.lock().unwrap() = st;
+    Ok(info(&state))
+}
+
+#[tauri::command]
+fn set_api_key(state: State<'_, AppState>, key: Option<String>) -> R<GatewayInfo> {
+    let key = key.map(|k| k.trim().to_string()).filter(|k| !k.is_empty()).unwrap_or_else(random_key);
+    if key.len() < 8 {
+        return Err("API Key 至少 8 个字符".into());
+    }
+    let mut st = state.settings.lock().unwrap().clone();
+    st.api_key = key.clone();
+    st.save(&state.settings_path())?;
+    *state.settings.lock().unwrap() = st;
+    state.gateway.set_api_key(key);
+    Ok(info(&state))
 }
 
 #[tauri::command]
@@ -169,7 +302,9 @@ async fn connect_openrouter(app: tauri::AppHandle, state: State<'_, AppState>) -
     })
     .await
     .map_err(s)?;
-    add_account_inner(&state, "openrouter", &key, None)
+    let acct = add_account_inner(&state, "openrouter", &key, None)?;
+    let _ = refresh_models_inner(&state, &acct.id).await;
+    Ok(acct)
 }
 
 #[tauri::command]
@@ -180,7 +315,7 @@ fn open_url(app: tauri::AppHandle, url: String) -> R<()> {
     app.opener().open_url(url, None::<&str>).map_err(s)
 }
 
-const IDENTIFIER: &str = "io.github.yangmaoswitch.app";
+/* ---------- uninstall helper ---------- */
 
 fn data_dir_without_tauri() -> Option<PathBuf> {
     #[cfg(windows)]
@@ -197,11 +332,12 @@ fn data_dir_without_tauri() -> Option<PathBuf> {
 /// Remove every stored key from the OS keychain (used by the uninstaller).
 pub fn purge_keys() {
     let Some(dir) = data_dir_without_tauri() else { return };
-    let accounts = AccountFile::new(dir.join("accounts.json")).load().unwrap_or_default();
-    for a in accounts {
+    for a in AccountFile::new(dir.join("accounts.json")).load().unwrap_or_default() {
         keychain_delete(&a.id);
     }
 }
+
+/* ---------- entry ---------- */
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -216,26 +352,37 @@ pub fn run() {
                 .and_then(|t| Catalog::from_json(&t).ok())
                 .unwrap_or_else(|| Catalog::from_json(BUNDLED_CATALOG).expect("bundled catalog"));
 
+            let settings_path = data_dir.join("settings.json");
+            let settings = Settings::load(&settings_path);
+            settings.save(&settings_path).ok();
+
             let file = AccountFile::new(data_dir.join("accounts.json"));
             let accounts = file.load().unwrap_or_default();
             let ledger = Arc::new(Ledger::open(&data_dir.join("usage.db"))?);
-            let gateway = Gateway::new(accounts.clone(), ledger, Arc::new(Keychain));
+            let gateway = Gateway::new(accounts.clone(), settings.api_key.clone(), ledger, Arc::new(Keychain));
 
-            let gw = gateway.clone();
-            let addr = tauri::async_runtime::block_on(async move {
-                match gw.serve(DEFAULT_PORT).await {
-                    Ok((a, _)) => Some(a),
-                    Err(_) => gw.serve(0).await.ok().map(|(a, _)| a),
-                }
-            });
-
-            app.manage(AppState {
+            let state = AppState {
                 data_dir,
                 file,
-                accounts: Mutex::new(accounts),
+                accounts: Mutex::new(accounts.clone()),
                 catalog: Mutex::new(catalog),
-                gateway,
-                addr: Mutex::new(addr),
+                settings: Mutex::new(settings.clone()),
+                gateway: gateway.clone(),
+                server: Mutex::new(Server { addr: None, error: None, handle: None }),
+            };
+            app.manage(state);
+
+            let handle = app.handle().clone();
+            tauri::async_runtime::block_on(async {
+                let st = handle.state::<AppState>();
+                let _ = start_server(&st.gateway, &st.server, settings.port).await;
+            });
+            // Refresh model lists in the background.
+            tauri::async_runtime::spawn(async move {
+                let st = handle.state::<AppState>();
+                for a in accounts {
+                    let _ = refresh_models_inner(&st, &a.id).await;
+                }
             });
             Ok(())
         })
@@ -246,10 +393,15 @@ pub fn run() {
             remove_account,
             set_enabled,
             set_margin,
+            move_account,
             test_account,
+            refresh_models,
+            list_models,
             usage,
             recent_requests,
             gateway_info,
+            set_port,
+            set_api_key,
             connect_openrouter,
             open_url
         ])
@@ -274,5 +426,11 @@ mod tests {
     fn bundled_catalog_parses() {
         let c = Catalog::from_json(BUNDLED_CATALOG).unwrap();
         assert!(c.provider("openrouter").is_some());
+    }
+
+    #[test]
+    fn random_key_shape() {
+        let k = random_key();
+        assert!(k.starts_with("ym-") && k.len() == 39);
     }
 }

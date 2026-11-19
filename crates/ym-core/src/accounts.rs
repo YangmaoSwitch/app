@@ -24,6 +24,28 @@ pub struct Account {
     #[serde(default)]
     pub limits: Vec<Limit>,
     pub added_at: DateTime<Utc>,
+    /// Native Anthropic endpoint; when absent, Claude-format requests are converted to OpenAI format.
+    #[serde(default)]
+    pub anthropic_base_url: Option<String>,
+    /// Only model ids ending with this suffix are routed here (e.g. `:free` on OpenRouter).
+    #[serde(default)]
+    pub model_suffix: Option<String>,
+    /// Model ids reported by the provider's `/models`, after the suffix filter.
+    #[serde(default)]
+    pub models: Vec<String>,
+}
+
+impl Account {
+    /// Whether a plain model id (no account prefix) should be routed to this account.
+    pub fn serves(&self, model: &str) -> bool {
+        self.enabled
+            && self.model_suffix.as_deref().map_or(true, |s| model.ends_with(s))
+            && self.models.iter().any(|m| m == model)
+    }
+
+    pub fn keep_model(&self, model: &str) -> bool {
+        self.model_suffix.as_deref().map_or(true, |s| model.ends_with(s))
+    }
 }
 
 fn default_margin() -> f64 {
@@ -42,6 +64,9 @@ impl Account {
             margin,
             limits: limits::derive(&p.quotas, margin),
             added_at: Utc::now(),
+            anthropic_base_url: api.anthropic_base_url.clone(),
+            model_suffix: api.free_model_rule.as_deref().filter(|r| r.contains(":free")).map(|_| ":free".to_string()),
+            models: Vec::new(),
         })
     }
 }

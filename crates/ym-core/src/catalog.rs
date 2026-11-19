@@ -51,6 +51,9 @@ pub struct Provider {
 pub struct Api {
     pub protocol: Vec<String>,
     pub base_url: String,
+    /// Native Anthropic Messages endpoint (base, without `/v1/messages`), if the provider has one.
+    #[serde(default)]
+    pub anthropic_base_url: Option<String>,
     #[serde(default)]
     pub free_models: Vec<String>,
     #[serde(default)]

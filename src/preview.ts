@@ -12,9 +12,9 @@ const nextMidnightUtc = () => {
 };
 
 const accounts: Account[] = [
-  { id: "openrouter", provider_id: "openrouter", label: "OpenRouter", base_url: "https://openrouter.ai/api/v1", enabled: true, margin: 0.9, added_at: iso(now - 3 * 864e5) },
-  { id: "siliconflow", provider_id: "siliconflow", label: "硅基流动", base_url: "https://api.siliconflow.cn/v1", enabled: true, margin: 0.9, added_at: iso(now - 864e5) },
-  { id: "aihubmix", provider_id: "aihubmix", label: "AiHubMix", base_url: "https://aihubmix.com/v1", enabled: false, margin: 0.8, added_at: iso(now - 2 * 864e5) },
+  { id: "openrouter", provider_id: "openrouter", label: "OpenRouter", base_url: "https://openrouter.ai/api/v1", enabled: true, margin: 0.9, added_at: iso(now - 3 * 864e5), models: ["deepseek/deepseek-v4-flash:free", "qwen/qwen3.8-27b:free", "z-ai/glm-5.3-flash:free"], model_suffix: ":free" },
+  { id: "siliconflow", provider_id: "siliconflow", label: "硅基流动", base_url: "https://api.siliconflow.cn/v1", enabled: true, margin: 0.9, added_at: iso(now - 864e5), models: ["THUDM/GLM-Z1-9B", "tencent/Hunyuan-MT-7B", "BAAI/bge-m3"] },
+  { id: "aihubmix", provider_id: "aihubmix", label: "AiHubMix", base_url: "https://aihubmix.com/v1", enabled: false, margin: 0.8, added_at: iso(now - 2 * 864e5), models: ["glm-5.3-flash"] },
 ];
 
 const usage: AccountUsage[] = [
@@ -53,7 +53,11 @@ export async function mockInvoke(cmd: string, _args?: Record<string, unknown>): 
     case "recent_requests":
       return log;
     case "gateway_info":
-      return { running: true, base_url: "http://127.0.0.1:17890/v1" };
+    case "set_port":
+    case "set_api_key":
+      return { running: true, base_url: "http://127.0.0.1:17890", port: 17890, api_key: "ym-3f9a0c27d18e4b6a90c1f2e7d5a8b3c4e6f1", error: null };
+    case "list_models":
+      return accounts.filter((a) => a.enabled).flatMap((a) => a.models.map((m) => ({ id: m, accounts: [a.id] })));
     case "test_account":
       return "连接正常（HTTP 200）";
     default:

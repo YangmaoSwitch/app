@@ -54,6 +54,22 @@ export interface Account {
   enabled: boolean;
   margin: number;
   added_at: string;
+  models: string[];
+  model_suffix?: string | null;
+  anthropic_base_url?: string | null;
+}
+
+export interface GatewayInfo {
+  running: boolean;
+  base_url: string | null;
+  port: number;
+  api_key: string;
+  error: string | null;
+}
+
+export interface ModelEntry {
+  id: string;
+  accounts: string[];
 }
 
 export interface LimitUsage {
@@ -96,7 +112,12 @@ export const api = {
   setMargin: (id: string, margin: number) => invoke<void>("set_margin", { id, margin }),
   testAccount: (id: string) => invoke<string>("test_account", { id }),
   usage: () => invoke<AccountUsage[]>("usage"),
-  gateway: () => invoke<{ running: boolean; base_url: string | null }>("gateway_info"),
+  gateway: () => invoke<GatewayInfo>("gateway_info"),
+  setPort: (port: number) => invoke<GatewayInfo>("set_port", { port }),
+  setApiKey: (key: string | null) => invoke<GatewayInfo>("set_api_key", { key }),
+  models: () => invoke<ModelEntry[]>("list_models"),
+  refreshModels: (id: string) => invoke<number>("refresh_models", { id }),
+  moveAccount: (id: string, delta: number) => invoke<void>("move_account", { id, delta }),
   connectOpenRouter: () => invoke<Account>("connect_openrouter"),
   openUrl: (url: string) => invoke<void>("open_url", { url }),
 };
