@@ -19,6 +19,7 @@ import {
   Trash2,
   Zap,
 } from "lucide-react";
+import TitleBar, { isMac } from "./TitleBar";
 import { api, Account, AccountUsage, Catalog, GatewayInfo, LimitUsage, ModelEntry, ModelSquare, SquareModel, OVERAGE, Provider, quotaParts, quotaText, REQUIRES, UsageRow } from "./api";
 
 type Page = "catalog" | "models" | "accounts" | "usage" | "connect";
@@ -69,9 +70,10 @@ export default function App() {
   const today = usage.reduce((s, u) => s + u.today_requests, 0);
 
   return (
-    <div className="shell">
+    <div className={isMac ? "shell mac" : "shell"}>
       <aside className="sidebar">
-        <div className="brand">
+        <div className="sidebar-drag" data-tauri-drag-region />
+        <div className="brand" data-tauri-drag-region>
           <img src="/icon.png" alt="" />
           <span>羊毛switch</span>
         </div>
@@ -88,6 +90,7 @@ export default function App() {
         <GatewayCard gw={gw} notify={notify} />
       </aside>
 
+      <TitleBar />
       <main className="main">
         {page === "catalog" && (
           <CatalogPage
