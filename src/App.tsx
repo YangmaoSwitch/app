@@ -15,6 +15,7 @@ import {
   Plus,
   RefreshCw,
   Search,
+  Server,
   Trash2,
   Zap,
 } from "lucide-react";
@@ -24,8 +25,8 @@ type Page = "catalog" | "models" | "accounts" | "usage" | "connect";
 type Notify = (ok: boolean, text: string) => void;
 
 const PAGES: { id: Page; label: string; icon: typeof Gift }[] = [
-  { id: "catalog", label: "免费额度", icon: Gift },
   { id: "models", label: "模型广场", icon: LayoutGrid },
+  { id: "catalog", label: "Providers", icon: Server },
   { id: "accounts", label: "我的账号", icon: KeyRound },
   { id: "usage", label: "用量", icon: BarChart3 },
   { id: "connect", label: "接入工具", icon: Plug },
@@ -33,7 +34,7 @@ const PAGES: { id: Page; label: string; icon: typeof Gift }[] = [
 
 const initialPage = (): Page => {
   const h = window.location.hash.slice(1) as Page;
-  return PAGES.some((p) => p.id === h) ? h : "catalog";
+  return PAGES.some((p) => p.id === h) ? h : "models";
 };
 
 export default function App() {
@@ -197,7 +198,7 @@ function IconBtn(props: { label: string; onClick: () => void; children: ReactNod
 
 const pname = (p: Provider) => p.name_zh ?? p.name;
 
-/* ---------- 免费额度 ---------- */
+/* ---------- Providers ---------- */
 
 function CatalogPage(props: { catalog: Catalog | null; accounts: Account[]; notify: Notify; onRefresh: () => void; onAdded: (a: Account) => void }) {
   const [region, setRegion] = useState<"all" | "cn" | "global">("all");
@@ -239,7 +240,7 @@ function CatalogPage(props: { catalog: Catalog | null; accounts: Account[]; noti
   return (
     <>
       <PageHead
-        title="免费额度"
+        title="Providers"
         sub={
           props.catalog ? (
             <>
@@ -764,9 +765,9 @@ function AccountsPage(props: { accounts: Account[]; usage: AccountUsage[]; onCha
         <div className="empty">
           <KeyRound size={28} />
           <h3>还没有账号</h3>
-          <p>在“免费额度”里一键开通 OpenRouter，或者去平台注册后粘贴 Key。</p>
+          <p>在 Providers 里一键开通 OpenRouter，或者去平台注册后粘贴 Key。</p>
           <button className="btn primary" onClick={props.onBrowse}>
-            浏览免费额度
+            浏览 Providers
           </button>
         </div>
       ) : (
