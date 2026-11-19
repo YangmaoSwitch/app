@@ -1,10 +1,8 @@
 name: build
 
+# 只手动触发：Windows 安装包在本地构建；macOS 安装包只能在 macOS 上构建，需要时手动运行。
 on:
-  push:
-    branches: [main]
-    tags: ["v*"]
-  pull_request:
+  workflow_dispatch:
 
 permissions:
   contents: write
