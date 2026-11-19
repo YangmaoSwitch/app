@@ -122,8 +122,11 @@ export const OVERAGE: Record<string, string> = {
 };
 
 export function quotaText(q: Quota): string {
-  const amount = q.amount == null ? "（见平台页面）" : q.amount.toLocaleString("zh-CN");
-  const parts = [`${PERIOD[q.period] ?? q.period} ${amount} ${UNIT[q.unit] ?? q.unit}`];
+  const period = PERIOD[q.period] ?? q.period;
+  const unit = UNIT[q.unit] ?? q.unit;
+  const parts = [
+    q.amount == null ? `${period}有上限（按${unit}计，数值见平台页面）` : `${period} ${q.amount.toLocaleString("zh-CN")} ${unit}`,
+  ];
   if (q.models) parts.push(q.models);
   if (q.condition) parts.push(q.condition);
   if (q.reset && q.reset !== "rolling") parts.push(`${q.reset} 重置`);
