@@ -68,7 +68,17 @@ export interface AccountUsage {
   today_tokens: number;
 }
 
+export interface UsageRow {
+  account_id: string;
+  ts: number;
+  model: string | null;
+  status: number | null;
+  prompt_tokens: number;
+  completion_tokens: number;
+}
+
 export const api = {
+  recentRequests: (limit = 100) => invoke<UsageRow[]>("recent_requests", { limit }),
   catalog: (refresh = false) => invoke<Catalog>("get_catalog", { refresh }),
   accounts: () => invoke<Account[]>("list_accounts"),
   addAccount: (providerId: string, key: string, baseUrl?: string) =>
@@ -120,6 +130,15 @@ export const OVERAGE: Record<string, string> = {
   manual: "需手动开通付费",
   unknown: "未知",
 };
+
+/** Short form for list rows, e.g. "每天 50 次". */
+export function quotaShort(q: Quota): string {
+  const period = PERIOD[q.period] ?? q.period;
+  const unit = UNIT[q.unit] ?? q.unit;
+  if (q.amount == null) return `${period}限额见平台`;
+  const n = q.amount >= 10000 ? `${(q.amount / 10000).toLocaleString("zh-CN")} 万` : q.amount.toLocaleString("zh-CN");
+  return `${period} ${n} ${unit}`;
+}
 
 export function quotaText(q: Quota): string {
   const period = PERIOD[q.period] ?? q.period;

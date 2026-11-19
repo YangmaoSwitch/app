@@ -144,6 +144,11 @@ fn usage(state: State<'_, AppState>) -> Vec<AccountUsage> {
     state.gateway.usage()
 }
 
+#[tauri::command]
+fn recent_requests(state: State<'_, AppState>, limit: u32) -> R<Vec<ym_core::ledger::UsageRow>> {
+    state.gateway.ledger().recent(limit.min(500)).map_err(s)
+}
+
 #[derive(Serialize)]
 struct GatewayInfo {
     running: bool,
@@ -220,6 +225,7 @@ pub fn run() {
             set_margin,
             test_account,
             usage,
+            recent_requests,
             gateway_info,
             connect_openrouter,
             open_url

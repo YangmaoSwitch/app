@@ -11,6 +11,16 @@ pub struct Ledger {
     conn: Mutex<Connection>,
 }
 
+#[derive(Debug, Clone, Serialize)]
+pub struct UsageRow {
+    pub account_id: String,
+    pub ts: i64,
+    pub model: Option<String>,
+    pub status: Option<i64>,
+    pub prompt_tokens: i64,
+    pub completion_tokens: i64,
+}
+
 #[derive(Debug, Clone, Copy, Default, Serialize, PartialEq)]
 pub struct Totals {
     pub requests: u64,
@@ -82,6 +92,27 @@ impl Ledger {
             |row| Ok((row.get(0)?, row.get(1)?)),
         )?;
         Ok(Totals { requests: r as u64, tokens: t as u64 })
+    }
+
+    /// Most recent requests, newest first.
+    pub fn recent(&self, limit: u32) -> anyhow::Result<Vec<UsageRow>> {
+        let c = self.conn.lock().unwrap();
+        let mut stmt = c.prepare(
+            "SELECT account_id, ts, model, status, prompt_tokens, completion_tokens FROM usage ORDER BY ts DESC LIMIT ?1",
+        )?;
+        let rows = stmt
+            .query_map(params![limit], |r| {
+                Ok(UsageRow {
+                    account_id: r.get(0)?,
+                    ts: r.get(1)?,
+                    model: r.get(2)?,
+                    status: r.get(3)?,
+                    prompt_tokens: r.get(4)?,
+                    completion_tokens: r.get(5)?,
+                })
+            })?
+            .collect::<Result<Vec<_>, _>>()?;
+        Ok(rows)
     }
 
     pub fn block(&self, account_id: &str, until: DateTime<Utc>, reason: &str) -> anyhow::Result<()> {
