@@ -1,6 +1,6 @@
 {
  "version": 1,
- "generated_at": "2026-11-19T13:29:17+00:00",
+ "generated_at": "2026-11-19T13:41:19+00:00",
  "count": 14,
  "providers": [
   {
@@ -16,7 +16,9 @@
     "protocol": [
      "openai"
     ],
-    "base_url": "https://aihubmix.com/v1"
+    "base_url": "https://aihubmix.com/v1",
+    "modelsdev": "aihubmix",
+    "models_access": "paid"
    },
    "signup": {
     "url": "https://aihubmix.com",
@@ -74,7 +76,9 @@
     "protocol": [
      "openai"
     ],
-    "base_url": "https://dashscope.aliyuncs.com/compatible-mode/v1"
+    "base_url": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+    "modelsdev": "alibaba-cn",
+    "models_access": "quota"
    },
    "signup": {
     "url": "https://bailian.console.aliyun.com",
@@ -125,6 +129,8 @@
      "anthropic"
     ],
     "base_url": "https://developer.amd.com.cn/radeon/api/v1",
+    "modelsdev": "amd",
+    "models_access": "quota",
     "anthropic_base_url": "https://developer.amd.com.cn/radeon/api"
    },
    "signup": {
@@ -176,6 +182,8 @@
      "openai"
     ],
     "base_url": "https://api.cloudflare.com/client/v4/accounts/ACCOUNT_ID/ai/v1",
+    "modelsdev": "cloudflare-workers-ai",
+    "models_access": "quota",
     "free_model_rule": "部分模型仅付费计划可用"
    },
    "signup": {
@@ -222,7 +230,9 @@
     "protocol": [
      "openai"
     ],
-    "base_url": "https://api.cohere.ai/compatibility/v1"
+    "base_url": "https://api.cohere.ai/compatibility/v1",
+    "modelsdev": "cohere",
+    "models_access": "quota"
    },
    "signup": {
     "url": "https://dashboard.cohere.com",
@@ -270,7 +280,9 @@
      "openai",
      "gemini"
     ],
-    "base_url": "https://generativelanguage.googleapis.com/v1beta/openai/"
+    "base_url": "https://generativelanguage.googleapis.com/v1beta/openai/",
+    "modelsdev": "google",
+    "models_access": "quota"
    },
    "signup": {
     "url": "https://aistudio.google.com/app/apikey",
@@ -328,7 +340,9 @@
     "protocol": [
      "openai"
     ],
-    "base_url": "https://api.groq.com/openai/v1"
+    "base_url": "https://api.groq.com/openai/v1",
+    "modelsdev": "groq",
+    "models_access": "quota"
    },
    "signup": {
     "url": "https://console.groq.com",
@@ -376,6 +390,7 @@
     ],
     "base_url": "https://api-inference.modelscope.cn/v1",
     "models_url": "https://api-inference.modelscope.cn/v1/models",
+    "modelsdev": "modelscope",
     "models_access": "quota"
    },
    "signup": {
@@ -421,6 +436,7 @@
     ],
     "base_url": "https://integrate.api.nvidia.com/v1",
     "models_url": "https://integrate.api.nvidia.com/v1/models",
+    "modelsdev": "nvidia",
     "models_access": "quota"
    },
    "signup": {
@@ -549,6 +565,8 @@
      "anthropic"
     ],
     "base_url": "https://api.siliconflow.cn/v1",
+    "modelsdev": "siliconflow-cn",
+    "models_access": "quota",
     "anthropic_base_url": "https://api.siliconflow.cn",
     "free_models": [
      "GLM-Z1-9B",
@@ -656,7 +674,13 @@
     "protocol": [
      "openai"
     ],
-    "base_url": "https://ark.cn-beijing.volces.com/api/v3"
+    "base_url": "https://ark.cn-beijing.volces.com/api/v3",
+    "modelsdev": "volcengine",
+    "models_access": "paid",
+    "quota_models": [
+     "Doubao-Seed-2.1-pro",
+     "Doubao-Seed-2.1-turbo"
+    ]
    },
    "signup": {
     "url": "https://console.volcengine.com/ark",
@@ -699,6 +723,8 @@
      "anthropic"
     ],
     "base_url": "https://open.bigmodel.cn/api/paas/v4",
+    "modelsdev": "zhipuai",
+    "models_access": "paid",
     "anthropic_base_url": "https://open.bigmodel.cn/api/anthropic",
     "free_models": [
      "GLM-4.7-Flash",

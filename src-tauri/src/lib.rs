@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 use tauri::{Manager, State};
 use tauri_plugin_opener::OpenerExt;
 use ym_core::accounts::{self, Account, AccountFile, SecretStore};
-use ym_core::catalog::{Catalog, CATALOG_URL, MODELS_URL};
+use ym_core::catalog::{Catalog, CATALOG_URLS, MODELS_URLS};
 use ym_core::gateway::{fetch_models, AccountUsage, Gateway, ModelEntry};
 use ym_core::ledger::Ledger;
 use ym_core::limits;
@@ -138,27 +138,64 @@ async fn refresh_models_inner(state: &AppState, id: &str) -> R<usize> {
 
 /* ---------- commands ---------- */
 
+/// Server data older than this is fetched again when a page asks for it.
+const SERVER_TTL: std::time::Duration = std::time::Duration::from_secs(30 * 60);
+
+/// GET the first mirror that answers.
+async fn fetch_first(urls: &[&str]) -> R<String> {
+    let client = reqwest::Client::builder().timeout(std::time::Duration::from_secs(10)).build().map_err(s)?;
+    let mut last = String::new();
+    for u in urls {
+        match client.get(*u).send().await.and_then(|r| r.error_for_status()) {
+            Ok(r) => match r.text().await {
+                Ok(t) => return Ok(t),
+                Err(e) => last = e.to_string(),
+            },
+            Err(e) => last = e.to_string(),
+        }
+    }
+    Err(format!("服务器不可用：{last}"))
+}
+
+fn fresh(path: &std::path::Path) -> bool {
+    std::fs::metadata(path).and_then(|m| m.modified()).ok().and_then(|t| t.elapsed().ok()).is_some_and(|d| d < SERVER_TTL)
+}
+
+/// Provider catalog from the server; the cached copy (or the bundled snapshot) when the server is unreachable.
+/// `refresh` forces a fetch and reports a failure instead of falling back.
 #[tauri::command]
 async fn get_catalog(state: State<'_, AppState>, refresh: bool) -> R<Catalog> {
-    if refresh {
-        let text = reqwest::get(CATALOG_URL).await.map_err(s)?.error_for_status().map_err(s)?.text().await.map_err(s)?;
-        let cat = Catalog::from_json(&text).map_err(s)?;
-        std::fs::write(state.data_dir.join("catalog.json"), &text).map_err(s)?;
-        *state.catalog.lock().unwrap() = cat.clone();
-        return Ok(cat);
+    let cache = state.data_dir.join("catalog.json");
+    if refresh || !fresh(&cache) {
+        let got = fetch_first(CATALOG_URLS).await.and_then(|t| Catalog::from_json(&t).map(|c| (t, c)).map_err(s));
+        match got {
+            Ok((text, cat)) => {
+                std::fs::write(&cache, &text).map_err(s)?;
+                *state.catalog.lock().unwrap() = cat.clone();
+                return Ok(cat);
+            }
+            Err(e) if refresh => return Err(e),
+            Err(_) => {}
+        }
     }
     Ok(state.catalog.lock().unwrap().clone())
 }
 
-/// Free model list for the model square (cached copy, bundled snapshot as fallback).
+/// Model square data from the server (every platform's models, free / quota / paid);
+/// the cached copy, then the bundled snapshot, when the server is unreachable.
 #[tauri::command]
 async fn get_model_square(state: State<'_, AppState>, refresh: bool) -> R<serde_json::Value> {
     let cache = state.data_dir.join("models.json");
-    if refresh {
-        let text = reqwest::get(MODELS_URL).await.map_err(s)?.error_for_status().map_err(s)?.text().await.map_err(s)?;
-        let v: serde_json::Value = serde_json::from_str(&text).map_err(s)?;
-        std::fs::write(&cache, &text).map_err(s)?;
-        return Ok(v);
+    if refresh || !fresh(&cache) {
+        let got = fetch_first(MODELS_URLS).await.and_then(|t| serde_json::from_str::<serde_json::Value>(&t).map(|v| (t, v)).map_err(s));
+        match got {
+            Ok((text, v)) => {
+                std::fs::write(&cache, &text).map_err(s)?;
+                return Ok(v);
+            }
+            Err(e) if refresh => return Err(e),
+            Err(_) => {}
+        }
     }
     let text = std::fs::read_to_string(&cache).unwrap_or_else(|_| BUNDLED_MODELS.to_string());
     serde_json::from_str(&text).map_err(s)

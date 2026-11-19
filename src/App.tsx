@@ -20,7 +20,7 @@ import {
   Zap,
 } from "lucide-react";
 import TitleBar, { isMac } from "./TitleBar";
-import { api, Account, AccountUsage, Catalog, GatewayInfo, LimitUsage, ModelEntry, ModelSquare, SquareModel, Offer, Access, modelKey, quotaShort, OVERAGE, Provider, quotaParts, quotaText, REQUIRES, UsageRow } from "./api";
+import { api, Account, AccountUsage, Catalog, GatewayInfo, LimitUsage, ModelEntry, ModelSquare, SquareModel, Offer, Access, modelKey, quotaShort, priceText, ProviderModels, OVERAGE, Provider, quotaParts, quotaText, REQUIRES, UsageRow } from "./api";
 
 type Page = "catalog" | "models" | "accounts" | "usage" | "connect";
 type Notify = (ok: boolean, text: string) => void;
@@ -398,10 +398,10 @@ function ProviderDetail({ p, onAdd }: { p: Provider; onAdd: () => void }) {
           {p.signup.requires.map((r) => REQUIRES[r] ?? r).join("、") || "—"}
           {p.signup.notes && <span className="muted">（{p.signup.notes}）</span>}
         </dd>
-        {p.signup.regions_blocked.length > 0 && (
+        {(p.signup.regions_blocked?.length ?? 0) > 0 && (
           <>
             <dt>不支持地区</dt>
-            <dd>{p.signup.regions_blocked.join("、")}</dd>
+            <dd>{p.signup.regions_blocked!.join("、")}</dd>
           </>
         )}
         <dt>额度用完后</dt>
@@ -412,18 +412,16 @@ function ProviderDetail({ p, onAdd }: { p: Provider; onAdd: () => void }) {
             <dd className="mono">{p.api.base_url}</dd>
           </>
         )}
-        {(p.api?.free_models?.length ?? 0) > 0 && (
-          <>
-            <dt>免费模型</dt>
-            <dd>{p.api!.free_models!.join("、")}</dd>
-          </>
-        )}
-        {p.terms.length > 0 && (
+        <dt>模型</dt>
+        <dd>
+          <ProviderModelList pid={p.id} />
+        </dd>
+        {(p.terms?.length ?? 0) > 0 && (
           <>
             <dt>条款要点</dt>
             <dd>
               <ul>
-                {p.terms.map((t, i) => (
+                {p.terms!.map((t, i) => (
                   <li key={i}>
                     <a onClick={() => api.openUrl(t.url)}>{t.point}</a>
                   </li>
@@ -450,6 +448,59 @@ function ProviderDetail({ p, onAdd }: { p: Provider; onAdd: () => void }) {
           </button>
         )}
       </div>
+    </div>
+  );
+}
+
+/** The platform's model list maintained on the server: free / covered by the free quota / paid, with list prices. */
+function ProviderModelList({ pid }: { pid: string }) {
+  const [pm, setPm] = useState<ProviderModels | null | undefined>(undefined);
+  const [tab, setTab] = useState<"free" | "quota" | "paid">("free");
+  const [all, setAll] = useState(false);
+  useEffect(() => {
+    api.modelSquare().then((d) => {
+      const x = d.providers?.[pid] ?? null;
+      setPm(x);
+      if (x) setTab(x.free ? "free" : x.quota ? "quota" : "paid");
+    }).catch(() => setPm(null));
+  }, [pid]);
+  if (pm === undefined) return <span className="muted">正在加载…</span>;
+  if (!pm || pm.total === 0) return <span className="muted">暂无模型列表，欢迎提交。</span>;
+  const rows = pm.models.filter((m) => m.access === tab);
+  const shown = all ? rows : rows.slice(0, 12);
+  return (
+    <div className="pmodels">
+      <Segmented
+        label="模型类别"
+        value={tab}
+        onChange={(v) => {
+          setTab(v);
+          setAll(false);
+        }}
+        options={[
+          ["free", "免费", pm.free],
+          ["quota", "用免费额度", pm.quota],
+          ["paid", "付费", pm.paid],
+        ]}
+      />
+      {rows.length === 0 ? (
+        <span className="muted small">没有这一类模型。</span>
+      ) : (
+        <ul className="pmodel-list">
+          {shown.map((m) => (
+            <li key={m.model}>
+              <code>{m.model}</code>
+              {m.price && (m.price.input > 0 || m.price.output > 0) && <span className="muted small num">{priceText(m.price)}</span>}
+            </li>
+          ))}
+        </ul>
+      )}
+      {rows.length > shown.length && (
+        <a className="small" onClick={() => setAll(true)}>
+          展开全部 {rows.length} 个
+        </a>
+      )}
+      {tab !== "free" && rows.some((m) => m.price) && <span className="muted small">价格为每百万输入 / 输出 tokens 的美元标价，仅供参考。</span>}
     </div>
   );
 }
@@ -733,7 +784,11 @@ function ModelsPage(props: { catalog: Catalog | null; accounts: Account[]; notif
                       {pName(o.provider)} <span className={`mtag ${acc.tone}`}>{acc.text}</span>
                     </b>
                     <code>{o.model}</code>
-                    {q && <span className="muted small">{q}</span>}
+                    {(q || (o.price && (o.price.input > 0 || o.price.output > 0))) && (
+                      <span className="muted small">
+                        {[q, o.price && (o.price.input > 0 || o.price.output > 0) ? `标价 ${priceText(o.price)} 每百万 tokens` : null].filter(Boolean).join(" · ")}
+                      </span>
+                    )}
                   </div>
                   {o.access === "paid" ? null : owned.has(o.provider) ? (
                     <button

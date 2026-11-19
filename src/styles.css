@@ -290,3 +290,9 @@ pre { margin: 0 0 10px; background: #18181b; color: #e4e4e7; padding: 14px 16px;
 .main { padding-top: 44px; }
 .shell.mac .sidebar { padding-top: 46px; }
 .shell.mac .main { padding-top: 40px; }
+
+/* platform model list */
+.pmodels { display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
+.pmodel-list { list-style: none; margin: 0; padding: 0; width: 100%; display: flex; flex-direction: column; }
+.pmodel-list li { display: flex; justify-content: space-between; gap: 12px; padding: 5px 0; border-bottom: 1px solid var(--line-soft); }
+.pmodel-list code { font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

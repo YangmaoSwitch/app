@@ -32,11 +32,11 @@ export interface Provider {
   last_verified: string;
   summary?: string;
   api?: { protocol: string[]; base_url: string; free_models?: string[]; free_model_rule?: string; models?: string[]; models_url?: string; models_access?: "free" | "quota" };
-  signup: { url: string; requires: string[]; regions_blocked: string[]; notes?: string };
+  signup: { url: string; requires: string[]; regions_blocked?: string[]; notes?: string };
   quotas: Quota[];
   overage: "blocked" | "auto_paid" | "manual" | "unknown";
   onboarding: { level: "L1" | "L2" | "L3"; key_page?: string; key_pattern?: string; oauth?: unknown };
-  terms: { point: string; url: string }[];
+  terms?: { point: string; url: string }[];
   tags: string[];
 }
 
@@ -110,11 +110,26 @@ export interface SquareModel {
 /** free = free model, quota = counted against the platform's free quota/credits, paid = paid only,
  *  account = not in the catalog data but listed by one of your own accounts. */
 export type Access = "free" | "quota" | "paid" | "account";
+export interface Price {
+  input: number;
+  output: number;
+}
 export interface Offer {
   provider: string;
   model: string;
   access?: Access;
+  /** USD per million tokens */
+  price?: Price | null;
 }
+export interface ProviderModels {
+  total: number;
+  free: number;
+  quota: number;
+  paid: number;
+  models: { model: string; access: "free" | "quota" | "paid"; price: Price | null }[];
+}
+/** "$0.45 / $1.34" per million input / output tokens */
+export const priceText = (p?: Price | null) => (p ? `$${+p.input.toFixed(3)} / $${+p.output.toFixed(3)}` : "");
 
 /** Normalized model name used to match the same model across platforms (same rule as the catalog build). */
 export function modelKey(id: string): string {
@@ -124,6 +139,7 @@ export function modelKey(id: string): string {
 
 export interface ModelSquare {
   generated_at: string;
+  providers?: Record<string, ProviderModels>;
   models: SquareModel[];
 }
 
