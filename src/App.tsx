@@ -8,6 +8,8 @@ import {
   ExternalLink,
   Gift,
   KeyRound,
+  LayoutGrid,
+  X,
   Play,
   Plug,
   Plus,
@@ -16,13 +18,14 @@ import {
   Trash2,
   Zap,
 } from "lucide-react";
-import { api, Account, AccountUsage, Catalog, GatewayInfo, LimitUsage, ModelEntry, OVERAGE, Provider, quotaParts, quotaText, REQUIRES, UsageRow } from "./api";
+import { api, Account, AccountUsage, Catalog, GatewayInfo, LimitUsage, ModelEntry, ModelSquare, SquareModel, OVERAGE, Provider, quotaParts, quotaText, REQUIRES, UsageRow } from "./api";
 
-type Page = "catalog" | "accounts" | "usage" | "connect";
+type Page = "catalog" | "models" | "accounts" | "usage" | "connect";
 type Notify = (ok: boolean, text: string) => void;
 
 const PAGES: { id: Page; label: string; icon: typeof Gift }[] = [
   { id: "catalog", label: "免费额度", icon: Gift },
+  { id: "models", label: "模型广场", icon: LayoutGrid },
   { id: "accounts", label: "我的账号", icon: KeyRound },
   { id: "usage", label: "用量", icon: BarChart3 },
   { id: "connect", label: "接入工具", icon: Plug },
@@ -104,6 +107,7 @@ export default function App() {
             }}
           />
         )}
+        {page === "models" && <ModelsPage catalog={catalog} accounts={accounts} notify={notify} onOpenProvider={() => go("catalog")} />}
         {page === "accounts" && <AccountsPage accounts={accounts} usage={usage} onChange={reload} notify={notify} onBrowse={() => go("catalog")} />}
         {page === "usage" && <UsagePage usage={usage} />}
         {page === "connect" && <ConnectPage accounts={accounts} gw={gw} onGw={setGw} notify={notify} />}
@@ -509,6 +513,213 @@ function AddKeyDialog(props: { p: Provider; onClose: () => void; onAdded: (a: Ac
         </div>
       </div>
     </div>
+  );
+}
+
+/* ---------- 模型广场 ---------- */
+
+const ctxText = (n: number | null) => (n == null ? null : n >= 1e6 ? `${+(n / 1048576).toFixed(1)}M` : `${Math.round(n / 1024)}K`);
+const isNew = (d: string | null) => !!d && Date.now() - new Date(d).getTime() < 21 * 864e5;
+
+function modelTags(m: SquareModel): { text: string; tone?: string }[] {
+  const t: { text: string; tone?: string }[] = [];
+  if (m.description_source) t.push({ text: "对话", tone: "blue" });
+  if (m.input_modalities.includes("image")) t.push({ text: "视觉" });
+  if (m.input_modalities.includes("video")) t.push({ text: "视频理解" });
+  if (m.input_modalities.includes("audio")) t.push({ text: "音频" });
+  if (m.tools) t.push({ text: "Tools" });
+  if (m.reasoning) t.push({ text: "推理模型" });
+  const c = ctxText(m.context_length);
+  if (c) t.push({ text: c });
+  return t;
+}
+
+function ModelsPage(props: { catalog: Catalog | null; accounts: Account[]; notify: Notify; onOpenProvider: () => void }) {
+  const [data, setData] = useState<ModelSquare | null>(null);
+  const [q, setQ] = useState("");
+  const [kind, setKind] = useState<"all" | "vision" | "tools" | "reasoning">("all");
+  const [provider, setProvider] = useState("all");
+  const [open, setOpen] = useState<SquareModel | null>(null);
+  useEffect(() => {
+    api.modelSquare().then(setData).catch((e) => props.notify(false, String(e)));
+  }, []);
+
+  const pName = (id: string) => {
+    const p = props.catalog?.providers.find((x) => x.id === id);
+    return p ? pname(p) : id;
+  };
+  const owned = new Set(props.accounts.filter((a) => a.enabled).map((a) => a.provider_id));
+  const models = data?.models ?? [];
+  const providers = Array.from(new Set(models.flatMap((m) => m.offers.map((o) => o.provider))));
+  const text = q.trim().toLowerCase();
+  const list = models.filter(
+    (m) =>
+      (provider === "all" || m.offers.some((o) => o.provider === provider)) &&
+      (kind === "all" || (kind === "vision" && m.input_modalities.includes("image")) || (kind === "tools" && m.tools) || (kind === "reasoning" && m.reasoning)) &&
+      (!text || `${m.name} ${m.vendor ?? ""} ${m.id} ${m.description}`.toLowerCase().includes(text)),
+  );
+
+  return (
+    <>
+      <PageHead
+        title="模型广场"
+        sub={data ? <>可以免费调用的模型 <b className="num">{models.length}</b> 个 · 更新于 {data.generated_at.slice(0, 10)}</> : "正在加载…"}
+      >
+        <button
+          className="btn"
+          onClick={async () => {
+            try {
+              setData(await api.modelSquare(true));
+              props.notify(true, "模型列表已更新");
+            } catch (e) {
+              props.notify(false, `更新失败：${e}`);
+            }
+          }}
+        >
+          <RefreshCw size={15} /> 更新
+        </button>
+      </PageHead>
+      <div className="toolbar">
+        <label className="search">
+          <Search size={15} />
+          <input placeholder="搜索模型名称" value={q} onChange={(e) => setQ(e.target.value)} />
+        </label>
+        <Segmented
+          label="能力"
+          value={kind}
+          onChange={setKind}
+          options={[
+            ["all", "全部"],
+            ["vision", "视觉"],
+            ["tools", "Tools"],
+            ["reasoning", "推理"],
+          ]}
+        />
+        <select className="select" value={provider} onChange={(e) => setProvider(e.target.value)} aria-label="平台">
+          <option value="all">全部平台</option>
+          {providers.map((p) => (
+            <option key={p} value={p}>
+              {pName(p)}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      {list.length === 0 && data && <div className="empty small-empty">没有符合条件的模型。</div>}
+      <div className="model-grid">
+        {list.map((m) => {
+          const ready = m.offers.some((o) => owned.has(o.provider));
+          return (
+            <button key={m.id} className="mcard" onClick={() => setOpen(m)}>
+              {isNew(m.created) && <span className="ribbon">New</span>}
+              <div className="mcard-head">
+                <Avatar name={m.vendor ?? m.name} seed={m.vendor ?? m.offers[0].provider} size={34} />
+                <div className="mcard-title">
+                  <b>{m.vendor ? `${m.vendor} / ${m.name}` : m.name}</b>
+                  <span>{m.offers.map((o) => pName(o.provider)).join("、")}</span>
+                </div>
+              </div>
+              <p className="mcard-desc">{m.description || "暂无介绍。"}</p>
+              <div className="mtags">
+                {ready && <span className="mtag ok">可直接用</span>}
+                {modelTags(m).map((t, i) => (
+                  <span key={i} className={`mtag ${t.tone ?? ""}`}>
+                    {t.text}
+                  </span>
+                ))}
+              </div>
+            </button>
+          );
+        })}
+      </div>
+
+      {open && (
+        <div className="modal" onClick={() => setOpen(null)}>
+          <div className="dialog wide" role="dialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>
+            <div className="dialog-head">
+              <Avatar name={open.vendor ?? open.name} seed={open.vendor ?? open.offers[0].provider} size={44} />
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <h3>{open.name}</h3>
+                <p>{open.vendor ?? pName(open.offers[0].provider)}</p>
+              </div>
+              <IconBtn label="关闭" onClick={() => setOpen(null)}>
+                <X size={18} />
+              </IconBtn>
+            </div>
+            {open.description && (
+              <p className="mdesc">
+                {open.description}
+                {open.description_source && <span className="muted small">（简介来自 {open.description_source}）</span>}
+              </p>
+            )}
+            <div className="mtags">
+              {modelTags(open).map((t, i) => (
+                <span key={i} className={`mtag ${t.tone ?? ""}`}>
+                  {t.text}
+                </span>
+              ))}
+            </div>
+            <dl className="kv">
+              {open.context_length && (
+                <>
+                  <dt>上下文</dt>
+                  <dd className="num">{open.context_length.toLocaleString()} tokens</dd>
+                </>
+              )}
+              <dt>输入</dt>
+              <dd>{open.input_modalities.map((x) => ({ text: "文本", image: "图片", video: "视频", audio: "音频", file: "文件" })[x] ?? x).join("、")}</dd>
+              {open.created && (
+                <>
+                  <dt>上线时间</dt>
+                  <dd className="num">{open.created}</dd>
+                </>
+              )}
+              {open.hugging_face_id && (
+                <>
+                  <dt>开源权重</dt>
+                  <dd>
+                    <a onClick={() => api.openUrl(`https://huggingface.co/${open.hugging_face_id}`)}>{open.hugging_face_id}</a>
+                  </dd>
+                </>
+              )}
+            </dl>
+            <div className="offers">
+              <h4>在哪里免费用</h4>
+              {open.offers.map((o) => (
+                <div className="offer" key={o.provider}>
+                  <Avatar name={pName(o.provider)} seed={o.provider} size={30} />
+                  <div className="offer-main">
+                    <b>{pName(o.provider)}</b>
+                    <code>{o.model}</code>
+                  </div>
+                  {owned.has(o.provider) ? (
+                    <button
+                      className="btn"
+                      onClick={async () => {
+                        await navigator.clipboard.writeText(o.model);
+                        props.notify(true, `已复制模型名 ${o.model}`);
+                      }}
+                    >
+                      <Copy size={15} /> 复制模型名
+                    </button>
+                  ) : (
+                    <button
+                      className="btn primary"
+                      onClick={() => {
+                        setOpen(null);
+                        props.onOpenProvider();
+                      }}
+                    >
+                      去开通
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
 

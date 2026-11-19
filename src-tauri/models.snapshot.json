@@ -1,0 +1,544 @@
+{
+ "version": 1,
+ "generated_at": "2026-11-19T13:05:16+00:00",
+ "count": 25,
+ "models": [
+  {
+   "id": "inclusionai/ling-3.2-flash:free",
+   "name": "Ling 3.2 Flash",
+   "vendor": "inclusionAI",
+   "description": "Ling 3.2 Flash is a hybrid reasoning model from inclusionAI that accepts text and image input, with a 1M-token context window and up to 200 images per request. Thinking can...",
+   "context_length": 1048576,
+   "input_modalities": [
+    "text",
+    "image"
+   ],
+   "tools": true,
+   "reasoning": true,
+   "created": "2026-11-13",
+   "hugging_face_id": "inclusionAI/Ling-3.2-flash",
+   "description_source": "OpenRouter",
+   "offers": [
+    {
+     "provider": "openrouter",
+     "model": "inclusionai/ling-3.2-flash:free"
+    }
+   ]
+  },
+  {
+   "id": "baidu/ernie-5.5-flash-preview:free",
+   "name": "ERNIE-5.5-Flash-Preview",
+   "vendor": "Baidu",
+   "description": "ERNIE 5.5 Flash Preview is the latest foundation model in the ERNIE family, with comprehensive improvements in coding, agentic capabilities, knowledge work, and deep research. It has 280 billion total...",
+   "context_length": 1024000,
+   "input_modalities": [
+    "text"
+   ],
+   "tools": true,
+   "reasoning": true,
+   "created": "2026-11-10",
+   "hugging_face_id": "baidu/ERNIE-5.5-Flash-Preview",
+   "description_source": "OpenRouter",
+   "offers": [
+    {
+     "provider": "openrouter",
+     "model": "baidu/ernie-5.5-flash-preview:free"
+    }
+   ]
+  },
+  {
+   "id": "liquid/lfm-3-1.7b:free",
+   "name": "LFM3-1.7B",
+   "vendor": "LiquidAI",
+   "description": "A compact 1.7B-parameter text model with a 256K-token context, post-trained for agents, tool calling, and structured outputs. It reasons before it answers. Prompts and outputs may be retained and used...",
+   "context_length": 262144,
+   "input_modalities": [
+    "text"
+   ],
+   "tools": true,
+   "reasoning": true,
+   "created": "2026-11-06",
+   "hugging_face_id": "LiquidAI/LFM3-1.7B",
+   "description_source": "OpenRouter",
+   "offers": [
+    {
+     "provider": "openrouter",
+     "model": "liquid/lfm-3-1.7b:free"
+    }
+   ]
+  },
+  {
+   "id": "particle-ai/particle-1:free",
+   "name": "Particle-1",
+   "vendor": "Particle AI",
+   "description": "Particle-1 is a token-efficient agentic coding model from Particle AI, post-trained on DeepSeek V4.1 Flash. It is suited for software engineering work such as terminal workflows, codebase changes, and data...",
+   "context_length": 1048576,
+   "input_modalities": [
+    "text",
+    "image"
+   ],
+   "tools": true,
+   "reasoning": true,
+   "created": "2026-10-28",
+   "hugging_face_id": null,
+   "description_source": "OpenRouter",
+   "offers": [
+    {
+     "provider": "openrouter",
+     "model": "particle-ai/particle-1:free"
+    }
+   ]
+  },
+  {
+   "id": "recursive/flint-v1.0:free",
+   "name": "Flint",
+   "vendor": "Recursive",
+   "description": "Flint is an open-weight mixture-of-experts model from Recursive, with about 2.5B active parameters out of 40B total, built by Recursive's autoresearch system Eureka Machine for coding agents. It is suited...",
+   "context_length": 262144,
+   "input_modalities": [
+    "text"
+   ],
+   "tools": true,
+   "reasoning": true,
+   "created": "2026-10-21",
+   "hugging_face_id": "RecursiveSI/flint",
+   "description_source": "OpenRouter",
+   "offers": [
+    {
+     "provider": "openrouter",
+     "model": "recursive/flint-v1.0:free"
+    }
+   ]
+  },
+  {
+   "id": "nvidia/nemotron-3.5-super-vl:free",
+   "name": "Nemotron 3.5 Super VL",
+   "vendor": "NVIDIA",
+   "description": "NVIDIA Nemotron 3.5 Super VL is an open multimodal mixture-of-experts model from NVIDIA, with 12B active parameters out of 120B total. It takes text, images, documents, GUI screenshots, and video...",
+   "context_length": 1000000,
+   "input_modalities": [
+    "text",
+    "image",
+    "video"
+   ],
+   "tools": true,
+   "reasoning": true,
+   "created": "2026-10-15",
+   "hugging_face_id": "nvidia/NVIDIA-Nemotron-3.5-Super-VL-120B-A12B-BF16",
+   "description_source": "OpenRouter",
+   "offers": [
+    {
+     "provider": "openrouter",
+     "model": "nvidia/nemotron-3.5-super-vl:free"
+    }
+   ]
+  },
+  {
+   "id": "dots-studio/dots-3-note-preview:free",
+   "name": "Dots3-Note Preview",
+   "vendor": "Dots Studio",
+   "description": "Dots3-Note Preview is an open-weight mixture-of-experts model from Dots Studio, with 16B active parameters out of 280B total. It is the lightest model in the Dots 3 family and is...",
+   "context_length": 512000,
+   "input_modalities": [
+    "text",
+    "image"
+   ],
+   "tools": true,
+   "reasoning": true,
+   "created": "2026-08-14",
+   "hugging_face_id": "dots-studio/dots3-note-prev",
+   "description_source": "OpenRouter",
+   "offers": [
+    {
+     "provider": "openrouter",
+     "model": "dots-studio/dots-3-note-preview:free"
+    }
+   ]
+  },
+  {
+   "id": "nvidia/nemotron-3.5-lightning:free",
+   "name": "Nemotron 3.5 Lightning",
+   "vendor": "NVIDIA",
+   "description": "NVIDIA Nemotron 3.5 Lightning is an open mixture-of-experts model from NVIDIA, with 3B active parameters out of 30B total. It is suited for high-throughput agentic workloads and specialized tasks that...",
+   "context_length": 1000000,
+   "input_modalities": [
+    "text"
+   ],
+   "tools": true,
+   "reasoning": true,
+   "created": "2026-08-11",
+   "hugging_face_id": "nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-BF16",
+   "description_source": "OpenRouter",
+   "offers": [
+    {
+     "provider": "openrouter",
+     "model": "nvidia/nemotron-3.5-lightning:free"
+    }
+   ]
+  },
+  {
+   "id": "cohere/north-mini-code:free",
+   "name": "North Mini Code",
+   "vendor": "Cohere",
+   "description": "North Mini Code is Cohere's first agentic coding model and the debut of its North family. A sparse mixture-of-experts model with 30B total parameters and 3B active, it is optimized...",
+   "context_length": 256000,
+   "input_modalities": [
+    "text"
+   ],
+   "tools": true,
+   "reasoning": true,
+   "created": "2026-06-17",
+   "hugging_face_id": "CohereLabs/North-Mini-Code-1.0",
+   "description_source": "OpenRouter",
+   "offers": [
+    {
+     "provider": "openrouter",
+     "model": "cohere/north-mini-code:free"
+    }
+   ]
+  },
+  {
+   "id": "nvidia/nemotron-3-ultra-550b-a55b:free",
+   "name": "Nemotron 3 Ultra",
+   "vendor": "NVIDIA",
+   "description": "NVIDIA Nemotron 3 Ultra is an open frontier-reasoning and orchestration model from NVIDIA, with 55B active parameters out of 550B total (MoE). Built on a hybrid Transformer-Mamba mixture-of-experts architecture, it...",
+   "context_length": 1000000,
+   "input_modalities": [
+    "text"
+   ],
+   "tools": true,
+   "reasoning": true,
+   "created": "2026-06-04",
+   "hugging_face_id": "nvidia/NVIDIA-Nemotron-3-Ultra-550B-A55B-BF16",
+   "description_source": "OpenRouter",
+   "offers": [
+    {
+     "provider": "openrouter",
+     "model": "nvidia/nemotron-3-ultra-550b-a55b:free"
+    }
+   ]
+  },
+  {
+   "id": "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
+   "name": "Nemotron 3 Nano Omni",
+   "vendor": "NVIDIA",
+   "description": "NVIDIA Nemotron™ 3 Nano Omni is a 30B-A3B open multimodal model designed to function as a perception and context sub-agent in enterprise agent systems. It accepts text, image, video, and...",
+   "context_length": 256000,
+   "input_modalities": [
+    "text",
+    "audio",
+    "image",
+    "video"
+   ],
+   "tools": true,
+   "reasoning": true,
+   "created": "2026-04-28",
+   "hugging_face_id": "nvidia/Nemotron-3-Nano-Omni-30B-A3B-Reasoning-BF16",
+   "description_source": "OpenRouter",
+   "offers": [
+    {
+     "provider": "openrouter",
+     "model": "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free"
+    }
+   ]
+  },
+  {
+   "id": "google/gemma-4-26b-a4b-it:free",
+   "name": "Gemma 4 26B A4B",
+   "vendor": "Google",
+   "description": "Gemma 4 26B A4B IT is an instruction-tuned Mixture-of-Experts (MoE) model from Google DeepMind. Despite 25.2B total parameters, only 3.8B activate per token during inference — delivering near-31B quality at...",
+   "context_length": 262144,
+   "input_modalities": [
+    "image",
+    "text",
+    "video"
+   ],
+   "tools": true,
+   "reasoning": true,
+   "created": "2026-04-03",
+   "hugging_face_id": "google/gemma-4-26B-A4B-it",
+   "description_source": "OpenRouter",
+   "offers": [
+    {
+     "provider": "openrouter",
+     "model": "google/gemma-4-26b-a4b-it:free"
+    }
+   ]
+  },
+  {
+   "id": "google/gemma-4-31b-it:free",
+   "name": "Gemma 4 31B",
+   "vendor": "Google",
+   "description": "Gemma 4 31B Instruct is Google DeepMind's 30.7B dense multimodal model supporting text and image input with text output. Features a 256K token context window, configurable thinking/reasoning mode, native function...",
+   "context_length": 262144,
+   "input_modalities": [
+    "image",
+    "text",
+    "video"
+   ],
+   "tools": true,
+   "reasoning": true,
+   "created": "2026-04-02",
+   "hugging_face_id": "google/gemma-4-31B-it",
+   "description_source": "OpenRouter",
+   "offers": [
+    {
+     "provider": "openrouter",
+     "model": "google/gemma-4-31b-it:free"
+    }
+   ]
+  },
+  {
+   "id": "siliconflow:GLM-Z1-9B",
+   "name": "GLM-Z1-9B",
+   "vendor": null,
+   "description": "",
+   "context_length": null,
+   "input_modalities": [
+    "text"
+   ],
+   "tools": null,
+   "reasoning": null,
+   "created": null,
+   "hugging_face_id": null,
+   "description_source": null,
+   "offers": [
+    {
+     "provider": "siliconflow",
+     "model": "GLM-Z1-9B"
+    }
+   ]
+  },
+  {
+   "id": "siliconflow:Hunyuan-MT-7B",
+   "name": "Hunyuan-MT-7B",
+   "vendor": null,
+   "description": "",
+   "context_length": null,
+   "input_modalities": [
+    "text"
+   ],
+   "tools": null,
+   "reasoning": null,
+   "created": null,
+   "hugging_face_id": null,
+   "description_source": null,
+   "offers": [
+    {
+     "provider": "siliconflow",
+     "model": "Hunyuan-MT-7B"
+    }
+   ]
+  },
+  {
+   "id": "siliconflow:Xing4.0-29B",
+   "name": "Xing4.0-29B",
+   "vendor": null,
+   "description": "",
+   "context_length": null,
+   "input_modalities": [
+    "text"
+   ],
+   "tools": null,
+   "reasoning": null,
+   "created": null,
+   "hugging_face_id": null,
+   "description_source": null,
+   "offers": [
+    {
+     "provider": "siliconflow",
+     "model": "Xing4.0-29B"
+    }
+   ]
+  },
+  {
+   "id": "siliconflow:BAAI/bge-m3",
+   "name": "BAAI/bge-m3",
+   "vendor": null,
+   "description": "",
+   "context_length": null,
+   "input_modalities": [
+    "text"
+   ],
+   "tools": null,
+   "reasoning": null,
+   "created": null,
+   "hugging_face_id": null,
+   "description_source": null,
+   "offers": [
+    {
+     "provider": "siliconflow",
+     "model": "BAAI/bge-m3"
+    }
+   ]
+  },
+  {
+   "id": "siliconflow:Kolors",
+   "name": "Kolors",
+   "vendor": null,
+   "description": "",
+   "context_length": null,
+   "input_modalities": [
+    "text"
+   ],
+   "tools": null,
+   "reasoning": null,
+   "created": null,
+   "hugging_face_id": null,
+   "description_source": null,
+   "offers": [
+    {
+     "provider": "siliconflow",
+     "model": "Kolors"
+    }
+   ]
+  },
+  {
+   "id": "zhipu-bigmodel:GLM-4.7-Flash",
+   "name": "GLM-4.7-Flash",
+   "vendor": null,
+   "description": "",
+   "context_length": null,
+   "input_modalities": [
+    "text"
+   ],
+   "tools": null,
+   "reasoning": null,
+   "created": null,
+   "hugging_face_id": null,
+   "description_source": null,
+   "offers": [
+    {
+     "provider": "zhipu-bigmodel",
+     "model": "GLM-4.7-Flash"
+    }
+   ]
+  },
+  {
+   "id": "zhipu-bigmodel:GLM-4-Flash-250414",
+   "name": "GLM-4-Flash-250414",
+   "vendor": null,
+   "description": "",
+   "context_length": null,
+   "input_modalities": [
+    "text"
+   ],
+   "tools": null,
+   "reasoning": null,
+   "created": null,
+   "hugging_face_id": null,
+   "description_source": null,
+   "offers": [
+    {
+     "provider": "zhipu-bigmodel",
+     "model": "GLM-4-Flash-250414"
+    }
+   ]
+  },
+  {
+   "id": "zhipu-bigmodel:GLM-Z1-Flash",
+   "name": "GLM-Z1-Flash",
+   "vendor": null,
+   "description": "",
+   "context_length": null,
+   "input_modalities": [
+    "text"
+   ],
+   "tools": null,
+   "reasoning": null,
+   "created": null,
+   "hugging_face_id": null,
+   "description_source": null,
+   "offers": [
+    {
+     "provider": "zhipu-bigmodel",
+     "model": "GLM-Z1-Flash"
+    }
+   ]
+  },
+  {
+   "id": "zhipu-bigmodel:GLM-4.6V-Flash",
+   "name": "GLM-4.6V-Flash",
+   "vendor": null,
+   "description": "",
+   "context_length": null,
+   "input_modalities": [
+    "text"
+   ],
+   "tools": null,
+   "reasoning": null,
+   "created": null,
+   "hugging_face_id": null,
+   "description_source": null,
+   "offers": [
+    {
+     "provider": "zhipu-bigmodel",
+     "model": "GLM-4.6V-Flash"
+    }
+   ]
+  },
+  {
+   "id": "zhipu-bigmodel:GLM-4V-Flash",
+   "name": "GLM-4V-Flash",
+   "vendor": null,
+   "description": "",
+   "context_length": null,
+   "input_modalities": [
+    "text"
+   ],
+   "tools": null,
+   "reasoning": null,
+   "created": null,
+   "hugging_face_id": null,
+   "description_source": null,
+   "offers": [
+    {
+     "provider": "zhipu-bigmodel",
+     "model": "GLM-4V-Flash"
+    }
+   ]
+  },
+  {
+   "id": "zhipu-bigmodel:CogView-3-Flash",
+   "name": "CogView-3-Flash",
+   "vendor": null,
+   "description": "",
+   "context_length": null,
+   "input_modalities": [
+    "text"
+   ],
+   "tools": null,
+   "reasoning": null,
+   "created": null,
+   "hugging_face_id": null,
+   "description_source": null,
+   "offers": [
+    {
+     "provider": "zhipu-bigmodel",
+     "model": "CogView-3-Flash"
+    }
+   ]
+  },
+  {
+   "id": "zhipu-bigmodel:CogVideoX-Flash",
+   "name": "CogVideoX-Flash",
+   "vendor": null,
+   "description": "",
+   "context_length": null,
+   "input_modalities": [
+    "text"
+   ],
+   "tools": null,
+   "reasoning": null,
+   "created": null,
+   "hugging_face_id": null,
+   "description_source": null,
+   "offers": [
+    {
+     "provider": "zhipu-bigmodel",
+     "model": "CogVideoX-Flash"
+    }
+   ]
+  }
+ ]
+}

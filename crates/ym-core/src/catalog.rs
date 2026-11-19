@@ -2,6 +2,8 @@ use serde::{Deserialize, Serialize};
 
 /// Public catalog URL (built by the catalog repo's CI).
 pub const CATALOG_URL: &str = "https://raw.githubusercontent.com/YangmaoSwitch/catalog/dist/catalog.json";
+/// Free model list built by the catalog repo's CI.
+pub const MODELS_URL: &str = "https://raw.githubusercontent.com/YangmaoSwitch/catalog/dist/models.json";
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Catalog {

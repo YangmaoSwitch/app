@@ -92,6 +92,26 @@ export interface AccountUsage {
   today_tokens: number;
 }
 
+export interface SquareModel {
+  id: string;
+  name: string;
+  vendor: string | null;
+  description: string;
+  context_length: number | null;
+  input_modalities: string[];
+  tools: boolean | null;
+  reasoning: boolean | null;
+  created: string | null;
+  hugging_face_id: string | null;
+  description_source: string | null;
+  offers: { provider: string; model: string }[];
+}
+
+export interface ModelSquare {
+  generated_at: string;
+  models: SquareModel[];
+}
+
 export interface UsageRow {
   account_id: string;
   ts: number;
@@ -102,6 +122,7 @@ export interface UsageRow {
 }
 
 export const api = {
+  modelSquare: (refresh = false) => invoke<ModelSquare>("get_model_square", { refresh }),
   recentRequests: (limit = 100) => invoke<UsageRow[]>("recent_requests", { limit }),
   catalog: (refresh = false) => invoke<Catalog>("get_catalog", { refresh }),
   accounts: () => invoke<Account[]>("list_accounts"),

@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 use tauri::{Manager, State};
 use tauri_plugin_opener::OpenerExt;
 use ym_core::accounts::{self, Account, AccountFile, SecretStore};
-use ym_core::catalog::{Catalog, CATALOG_URL};
+use ym_core::catalog::{Catalog, CATALOG_URL, MODELS_URL};
 use ym_core::gateway::{fetch_models, AccountUsage, Gateway, ModelEntry};
 use ym_core::ledger::Ledger;
 use ym_core::limits;
@@ -14,6 +14,7 @@ use ym_core::limits;
 const KEYCHAIN_SERVICE: &str = "yangmao-switch";
 const DEFAULT_PORT: u16 = 17890;
 const BUNDLED_CATALOG: &str = include_str!("../catalog.snapshot.json");
+const BUNDLED_MODELS: &str = include_str!("../models.snapshot.json");
 const IDENTIFIER: &str = "io.github.yangmaoswitch.app";
 
 /* ---------- keychain ---------- */
@@ -147,6 +148,20 @@ async fn get_catalog(state: State<'_, AppState>, refresh: bool) -> R<Catalog> {
         return Ok(cat);
     }
     Ok(state.catalog.lock().unwrap().clone())
+}
+
+/// Free model list for the model square (cached copy, bundled snapshot as fallback).
+#[tauri::command]
+async fn get_model_square(state: State<'_, AppState>, refresh: bool) -> R<serde_json::Value> {
+    let cache = state.data_dir.join("models.json");
+    if refresh {
+        let text = reqwest::get(MODELS_URL).await.map_err(s)?.error_for_status().map_err(s)?.text().await.map_err(s)?;
+        let v: serde_json::Value = serde_json::from_str(&text).map_err(s)?;
+        std::fs::write(&cache, &text).map_err(s)?;
+        return Ok(v);
+    }
+    let text = std::fs::read_to_string(&cache).unwrap_or_else(|_| BUNDLED_MODELS.to_string());
+    serde_json::from_str(&text).map_err(s)
 }
 
 #[tauri::command]
@@ -388,6 +403,7 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             get_catalog,
+            get_model_square,
             list_accounts,
             add_account,
             remove_account,

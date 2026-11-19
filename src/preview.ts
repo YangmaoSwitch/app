@@ -1,6 +1,7 @@
 // Sample data for reviewing the UI in a plain browser (`npm run dev`, then open
 // http://localhost:1420/#catalog). Never used inside the desktop app.
 import snapshot from "../src-tauri/catalog.snapshot.json";
+import square from "../src-tauri/models.snapshot.json";
 import type { Account, AccountUsage, UsageRow } from "./api";
 
 const now = Date.now();
@@ -46,6 +47,8 @@ export async function mockInvoke(cmd: string, _args?: Record<string, unknown>): 
   switch (cmd) {
     case "get_catalog":
       return snapshot;
+    case "get_model_square":
+      return square;
     case "list_accounts":
       return accounts;
     case "usage":
