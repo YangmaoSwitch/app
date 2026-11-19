@@ -1,4 +1,12 @@
-import { invoke } from "@tauri-apps/api/core";
+import { invoke as tauriInvoke } from "@tauri-apps/api/core";
+
+/** Outside Tauri (plain browser preview) use local sample data, so the UI can be reviewed in a browser. */
+export const inTauri = typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
+async function invoke<T>(cmd: string, args?: Record<string, unknown>): Promise<T> {
+  if (inTauri) return tauriInvoke<T>(cmd, args);
+  const { mockInvoke } = await import("./preview");
+  return (await mockInvoke(cmd, args)) as T;
+}
 
 export interface Quota {
   unit: string;
@@ -130,6 +138,17 @@ export const OVERAGE: Record<string, string> = {
   manual: "需手动开通付费",
   unknown: "未知",
 };
+
+const PER: Record<string, string> = { second: "秒", minute: "分钟", hour: "小时", day: "天", week: "周", month: "月", "one-time": "一次性" };
+
+/** Split a quota into a big number and a small unit line, e.g. {num: "50", unit: "次 / 天"}. */
+export function quotaParts(q: Quota): { num: string; unit: string } {
+  const unit = UNIT[q.unit] ?? q.unit;
+  const per = q.period === "one-time" ? "一次性" : `${unit} / ${PER[q.period] ?? q.period}`;
+  if (q.amount == null) return { num: "—", unit: q.period === "one-time" ? unit : `${unit} / ${PER[q.period] ?? q.period}` };
+  const n = q.amount >= 1e8 ? `${q.amount / 1e8}亿` : q.amount >= 1e4 ? `${q.amount / 1e4}万` : q.amount.toLocaleString("zh-CN");
+  return { num: n, unit: q.period === "one-time" ? `${unit} · ${per}` : per };
+}
 
 /** Short form for list rows, e.g. "每天 50 次". */
 export function quotaShort(q: Quota): string {

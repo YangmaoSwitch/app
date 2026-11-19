@@ -1,5 +1,6 @@
 import { ReactNode, useCallback, useEffect, useMemo, useState } from "react";
 import {
+  AlertTriangle,
   BarChart3,
   Check,
   ChevronDown,
@@ -15,156 +16,186 @@ import {
   Trash2,
   Zap,
 } from "lucide-react";
-import { api, Account, AccountUsage, Catalog, OVERAGE, Provider, quotaShort, quotaText, REQUIRES, UsageRow } from "./api";
+import { api, Account, AccountUsage, Catalog, LimitUsage, OVERAGE, Provider, quotaParts, quotaText, REQUIRES, UsageRow } from "./api";
 
 type Page = "catalog" | "accounts" | "usage" | "connect";
 type Notify = (ok: boolean, text: string) => void;
 
-const PAGES: { id: Page; label: string; icon: typeof Gift; desc: string }[] = [
-  { id: "catalog", label: "免费额度", icon: Gift, desc: "各平台大模型免费额度" },
-  { id: "accounts", label: "我的账号", icon: KeyRound, desc: "Key 只存在本机系统钥匙串" },
-  { id: "usage", label: "用量统计", icon: BarChart3, desc: "本机记账，按免费额度限量" },
-  { id: "connect", label: "接入工具", icon: Plug, desc: "在其他工具里使用本机入口" },
+const PAGES: { id: Page; label: string; icon: typeof Gift }[] = [
+  { id: "catalog", label: "免费额度", icon: Gift },
+  { id: "accounts", label: "我的账号", icon: KeyRound },
+  { id: "usage", label: "用量", icon: BarChart3 },
+  { id: "connect", label: "接入工具", icon: Plug },
 ];
 
+const initialPage = (): Page => {
+  const h = window.location.hash.slice(1) as Page;
+  return PAGES.some((p) => p.id === h) ? h : "catalog";
+};
+
 export default function App() {
-  const [page, setPage] = useState<Page>("catalog");
+  const [page, setPage] = useState<Page>(initialPage);
   const [catalog, setCatalog] = useState<Catalog | null>(null);
   const [accounts, setAccounts] = useState<Account[]>([]);
+  const [usage, setUsage] = useState<AccountUsage[]>([]);
   const [gw, setGw] = useState<{ running: boolean; base_url: string | null } | null>(null);
-  const [todayReq, setTodayReq] = useState(0);
   const [toast, setToast] = useState<{ ok: boolean; text: string } | null>(null);
 
   const reload = useCallback(async () => setAccounts(await api.accounts()), []);
-  const notify: Notify = (ok, text) => {
+  const notify: Notify = useCallback((ok, text) => {
     setToast({ ok, text });
-    window.setTimeout(() => setToast(null), 5000);
-  };
+    window.setTimeout(() => setToast(null), 4500);
+  }, []);
 
   useEffect(() => {
     api.catalog().then(setCatalog).catch((e) => notify(false, String(e)));
     api.gateway().then(setGw);
     reload();
-    const t = window.setInterval(() => api.usage().then((u) => setTodayReq(u.reduce((s, x) => s + x.today_requests, 0))), 5000);
+    const load = () => api.usage().then(setUsage);
+    load();
+    const t = window.setInterval(load, 4000);
     return () => window.clearInterval(t);
-  }, [reload]);
+  }, [reload, notify]);
 
-  const current = PAGES.find((p) => p.id === page)!;
+  const go = (p: Page) => {
+    setPage(p);
+    window.history.replaceState(null, "", `#${p}`);
+  };
+
+  const today = usage.reduce((s, u) => s + u.today_requests, 0);
 
   return (
     <div className="shell">
       <aside className="sidebar">
         <div className="brand">
           <img src="/icon.png" alt="" />
-          <span>
-            羊毛<b>switch</b>
-          </span>
+          <span>羊毛switch</span>
         </div>
-        <nav>
+        <nav aria-label="主导航">
           {PAGES.map((p) => (
-            <button key={p.id} className={page === p.id ? "nav-item active" : "nav-item"} onClick={() => setPage(p.id)}>
-              <p.icon size={18} />
+            <button key={p.id} className="nav-item" aria-current={page === p.id ? "page" : undefined} onClick={() => go(p.id)}>
+              <p.icon size={17} strokeWidth={2} />
               <span>{p.label}</span>
-              {p.id === "accounts" && accounts.length > 0 && <em>{accounts.length}</em>}
-              {p.id === "usage" && <em>今日 {todayReq}</em>}
+              {p.id === "accounts" && accounts.length > 0 && <em className="num">{accounts.length}</em>}
+              {p.id === "usage" && today > 0 && <em className="num">{today}</em>}
             </button>
           ))}
         </nav>
-        <div className="sidebar-foot">
-          <span className={gw?.running ? "dot on" : "dot"} />
-          {gw?.running ? <>本机入口运行中 <code>{gw.base_url?.replace("http://", "").replace("/v1", "")}</code></> : "本机入口未启动"}
-        </div>
+        <GatewayCard gw={gw} notify={notify} />
       </aside>
 
-      <section className="main">
-        <header className="topbar">
-          <current.icon size={22} className="topbar-icon" />
-          <h1>{current.label}</h1>
-          <span className="sub">{current.desc}</span>
-          <div className="spacer" />
-          {page === "catalog" && (
-            <button
-              className="btn"
-              onClick={async () => {
-                try {
-                  setCatalog(await api.catalog(true));
-                  notify(true, "目录已更新");
-                } catch (e) {
-                  notify(false, `更新失败：${e}`);
-                }
-              }}
-            >
-              <RefreshCw size={15} /> 更新目录
-            </button>
-          )}
-          {page === "accounts" && (
-            <button className="btn primary" onClick={() => setPage("catalog")}>
-              <Plus size={16} /> 添加账号
-            </button>
-          )}
-        </header>
-        <div className="content">
-          {page === "catalog" && (
-            <CatalogPage
-              catalog={catalog}
-              accounts={accounts}
-              notify={notify}
-              onAdded={async (a) => {
-                await reload();
-                notify(true, `已添加账号 ${a.id}，Key 已存入系统钥匙串`);
-              }}
-            />
-          )}
-          {page === "accounts" && <AccountsPage accounts={accounts} catalog={catalog} onChange={reload} notify={notify} />}
-          {page === "usage" && <UsagePage />}
-          {page === "connect" && <ConnectPage accounts={accounts} catalog={catalog} baseUrl={gw?.base_url ?? null} notify={notify} />}
+      <main className="main">
+        {page === "catalog" && (
+          <CatalogPage
+            catalog={catalog}
+            accounts={accounts}
+            notify={notify}
+            onRefresh={async () => {
+              try {
+                setCatalog(await api.catalog(true));
+                notify(true, "目录已更新");
+              } catch (e) {
+                notify(false, `更新失败：${e}`);
+              }
+            }}
+            onAdded={async (a) => {
+              await reload();
+              notify(true, `已添加 ${a.label}，Key 已存入系统钥匙串`);
+            }}
+          />
+        )}
+        {page === "accounts" && <AccountsPage accounts={accounts} usage={usage} onChange={reload} notify={notify} onBrowse={() => go("catalog")} />}
+        {page === "usage" && <UsagePage usage={usage} />}
+        {page === "connect" && <ConnectPage accounts={accounts} catalog={catalog} baseUrl={gw?.base_url ?? null} notify={notify} />}
+      </main>
+
+      {toast && (
+        <div className={`toast ${toast.ok ? "" : "err"}`} role="status">
+          {toast.ok ? <Check size={16} /> : <AlertTriangle size={16} />}
+          {toast.text}
         </div>
-      </section>
-      {toast && <div className={`toast ${toast.ok ? "ok" : "err"}`}>{toast.text}</div>}
+      )}
     </div>
   );
 }
 
-/* ---------- shared bits ---------- */
+/* ---------- shared ---------- */
 
-const AVATAR_COLORS = ["#f97316", "#3b82f6", "#10b981", "#8b5cf6", "#ef4444", "#0ea5e9", "#eab308", "#14b8a6", "#ec4899", "#6366f1"];
-function Avatar({ name, id }: { name: string; id: string }) {
-  let h = 0;
-  for (const c of id) h = (h * 31 + c.charCodeAt(0)) >>> 0;
-  const color = AVATAR_COLORS[h % AVATAR_COLORS.length];
-  const ch = /[\u4e00-\u9fa5]/.test(name) ? name[0] : name.replace(/[^A-Za-z0-9]/g, "").slice(0, 2);
+function GatewayCard({ gw, notify }: { gw: { running: boolean; base_url: string | null } | null; notify: Notify }) {
   return (
-    <div className="avatar" style={{ color, background: `${color}14`, borderColor: `${color}33` }}>
+    <div className="gateway">
+      <div className="gateway-head">
+        <span className={gw?.running ? "dot on" : "dot"} />
+        {gw?.running ? "本机入口运行中" : "本机入口未启动"}
+      </div>
+      {gw?.base_url && (
+        <button
+          className="gateway-url"
+          title="复制 Base URL"
+          onClick={async () => {
+            await navigator.clipboard.writeText(gw.base_url!);
+            notify(true, "已复制 Base URL");
+          }}
+        >
+          <span className="mono">{gw.base_url.replace("http://", "")}</span>
+          <Copy size={13} />
+        </button>
+      )}
+    </div>
+  );
+}
+
+function PageHead(props: { title: string; sub?: ReactNode; children?: ReactNode }) {
+  return (
+    <header className="page-head">
+      <div>
+        <h1>{props.title}</h1>
+        {props.sub && <p>{props.sub}</p>}
+      </div>
+      <div className="page-actions">{props.children}</div>
+    </header>
+  );
+}
+
+const AVATAR = ["#c2410c", "#1d4ed8", "#047857", "#6d28d9", "#b91c1c", "#0369a1", "#a16207", "#0f766e", "#be185d", "#4338ca"];
+function Avatar({ name, seed, size = 40 }: { name: string; seed: string; size?: number }) {
+  let h = 0;
+  for (const c of seed) h = (h * 31 + c.charCodeAt(0)) >>> 0;
+  const color = AVATAR[h % AVATAR.length];
+  const ch = /[\u4e00-\u9fa5]/.test(name[0]) ? name[0] : name.replace(/[^A-Za-z0-9]/g, "").slice(0, 2);
+  return (
+    <div className="avatar" style={{ color, background: `${color}12`, width: size, height: size }} aria-hidden>
       {ch}
     </div>
   );
 }
 
-function Segmented<T extends string>(props: { value: T; options: [T, string][]; onChange: (v: T) => void }) {
+function Segmented<T extends string>(props: { value: T; options: [T, string, number?][]; onChange: (v: T) => void; label: string }) {
   return (
-    <div className="segmented">
-      {props.options.map(([v, label]) => (
-        <button key={v} className={props.value === v ? "on" : ""} onClick={() => props.onChange(v)}>
+    <div className="segmented" role="tablist" aria-label={props.label}>
+      {props.options.map(([v, label, n]) => (
+        <button key={v} role="tab" aria-selected={props.value === v} onClick={() => props.onChange(v)}>
           {label}
+          {n !== undefined && <span className="num">{n}</span>}
         </button>
       ))}
     </div>
   );
 }
 
-function IconBtn(props: { title: string; onClick: () => void; children: ReactNode; danger?: boolean; disabled?: boolean }) {
+function IconBtn(props: { label: string; onClick: () => void; children: ReactNode; tone?: "danger" }) {
   return (
-    <button className={props.danger ? "icon-btn danger" : "icon-btn"} title={props.title} onClick={props.onClick} disabled={props.disabled}>
+    <button className={`icon-btn ${props.tone ?? ""}`} title={props.label} aria-label={props.label} onClick={props.onClick}>
       {props.children}
     </button>
   );
 }
 
-const providerName = (p: Provider) => p.name_zh ?? p.name;
+const pname = (p: Provider) => p.name_zh ?? p.name;
 
 /* ---------- 免费额度 ---------- */
 
-function CatalogPage(props: { catalog: Catalog | null; accounts: Account[]; notify: Notify; onAdded: (a: Account) => void }) {
+function CatalogPage(props: { catalog: Catalog | null; accounts: Account[]; notify: Notify; onRefresh: () => void; onAdded: (a: Account) => void }) {
   const [region, setRegion] = useState<"all" | "cn" | "global">("all");
   const [apiOnly, setApiOnly] = useState(true);
   const [q, setQ] = useState("");
@@ -172,157 +203,153 @@ function CatalogPage(props: { catalog: Catalog | null; accounts: Account[]; noti
   const [adding, setAdding] = useState<Provider | null>(null);
   const [busy, setBusy] = useState(false);
 
-  const list = useMemo(() => {
-    const ps = props.catalog?.providers ?? [];
-    const text = q.trim().toLowerCase();
-    return ps
-      .filter((p) => (region === "all" || p.region === region) && (!apiOnly || p.api_usable))
-      .filter((p) => !text || `${p.name} ${p.name_zh ?? ""} ${p.summary ?? ""} ${p.tags.join(" ")} ${(p.api?.free_models ?? []).join(" ")}`.toLowerCase().includes(text))
-      .sort((a, b) => Number(b.onboarding.level === "L3") - Number(a.onboarding.level === "L3") || Number(a.status !== "verified") - Number(b.status !== "verified"));
-  }, [props.catalog, region, apiOnly, q]);
+  const all = props.catalog?.providers ?? [];
+  const base = all.filter((p) => !apiOnly || p.api_usable);
+  const text = q.trim().toLowerCase();
+  const list = useMemo(
+    () =>
+      base
+        .filter((p) => region === "all" || p.region === region)
+        .filter((p) => !text || `${p.name} ${p.name_zh ?? ""} ${p.summary ?? ""} ${p.tags.join(" ")} ${(p.api?.free_models ?? []).join(" ")}`.toLowerCase().includes(text)),
+    [base, region, text],
+  );
 
-  if (!props.catalog) return <p className="muted">正在加载目录…</p>;
+  const groups: [string, Provider[]][] = [
+    ["一键开通", list.filter((p) => p.onboarding.level === "L3")],
+    ["国内平台", list.filter((p) => p.onboarding.level !== "L3" && p.region === "cn")],
+    ["海外平台", list.filter((p) => p.onboarding.level !== "L3" && p.region === "global")],
+  ];
 
   const connect = async () => {
     setBusy(true);
     try {
       props.onAdded(await api.connectOpenRouter());
     } catch (e) {
-      props.notify(false, `授权失败：${e}`);
+      props.notify(false, `授权没有完成：${e}`);
     } finally {
       setBusy(false);
     }
   };
 
+  const added = new Set(props.accounts.map((a) => a.provider_id));
+
   return (
     <>
-      <div className="filters">
-        <Segmented value={region} onChange={setRegion} options={[["all", "全部"], ["cn", "国内"], ["global", "海外"]]} />
-        <div className="search">
+      <PageHead
+        title="免费额度"
+        sub={
+          props.catalog ? (
+            <>
+              收录 <b className="num">{all.length}</b> 个平台，你已添加 <b className="num">{added.size}</b> 个 · 目录更新于 {props.catalog.generated_at?.slice(0, 10)}
+            </>
+          ) : (
+            "正在加载目录…"
+          )
+        }
+      >
+        <button className="btn" onClick={props.onRefresh}>
+          <RefreshCw size={15} /> 更新目录
+        </button>
+      </PageHead>
+
+      <div className="toolbar">
+        <Segmented
+          label="地区"
+          value={region}
+          onChange={setRegion}
+          options={[
+            ["all", "全部", base.length],
+            ["cn", "国内", base.filter((p) => p.region === "cn").length],
+            ["global", "海外", base.filter((p) => p.region === "global").length],
+          ]}
+        />
+        <label className="search">
           <Search size={15} />
-          <input placeholder="搜索平台、模型、标签" value={q} onChange={(e) => setQ(e.target.value)} />
-        </div>
-        <label className="check">
-          <input type="checkbox" checked={apiOnly} onChange={(e) => setApiOnly(e.target.checked)} /> 只看能当 API 用的
+          <input placeholder="搜索平台或模型，如 DeepSeek" value={q} onChange={(e) => setQ(e.target.value)} />
         </label>
-        <span className="muted small push">
-          {list.length} 个平台 · 目录更新于 {props.catalog.generated_at?.slice(0, 10) ?? "—"}
-        </span>
+        <label className="toggle">
+          <input type="checkbox" checked={apiOnly} onChange={(e) => setApiOnly(e.target.checked)} />
+          <span className="track" />
+          只看能当 API 用的
+        </label>
       </div>
 
-      <div className="rows">
-        {list.map((p) => {
-          const owned = props.accounts.filter((a) => a.provider_id === p.id).length;
-          const expanded = open === p.id;
-          const oneClick = p.onboarding.level === "L3" && p.id === "openrouter";
-          return (
-            <div key={p.id} className={expanded ? "row expanded" : "row"}>
-              <div className="row-main" onClick={() => setOpen(expanded ? null : p.id)}>
-                <Avatar name={providerName(p)} id={p.id} />
-                <div className="row-title">
-                  <div className="name">
-                    {providerName(p)}
-                    {p.status !== "verified" && <span className="tag warn">待核实</span>}
-                    {p.overage === "auto_paid" && <span className="tag danger">用完自动付费</span>}
-                    {owned > 0 && <span className="tag ok">已添加</span>}
+      {list.length === 0 && props.catalog && <div className="empty small-empty">没有符合条件的平台。换个关键词，或者切到“全部”。</div>}
+
+      {groups.map(([title, ps]) =>
+        ps.length === 0 ? null : (
+          <section key={title} className="group">
+            <h2>
+              {title} <span className="num">{ps.length}</span>
+            </h2>
+            <div className="list">
+              {ps.map((p) => {
+                const expanded = open === p.id;
+                const oneClick = p.onboarding.level === "L3" && p.id === "openrouter";
+                return (
+                  <div key={p.id} className="item" data-open={expanded || undefined}>
+                    <div className="item-main" onClick={() => setOpen(expanded ? null : p.id)}>
+                      <Avatar name={pname(p)} seed={p.id} />
+                      <div className="item-title">
+                        <div className="name">
+                          {pname(p)}
+                          {added.has(p.id) && <span className="chip ok">已添加</span>}
+                          {p.status !== "verified" && <span className="chip warn">待核实</span>}
+                        </div>
+                        <div className="desc">{p.summary ?? p.homepage}</div>
+                      </div>
+                      <div className="quotas">
+                        {p.quotas.every((x) => x.amount == null) && (
+                          <div className="quota">
+                            <b className="dim">见平台</b>
+                            <span>限额按平台公布</span>
+                          </div>
+                        )}
+                        {p.quotas.filter((x) => x.amount != null).slice(0, 2).map((x, i) => {
+                          const { num, unit } = quotaParts(x);
+                          return (
+                            <div className="quota" key={i} title={quotaText(x)}>
+                              <b className="num">{num}</b>
+                              <span>{unit}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                      <div className="item-actions" onClick={(e) => e.stopPropagation()}>
+                        {p.overage === "auto_paid" && (
+                          <span className="risk" title="免费额度用完后会自动转为付费，记得在平台开启“用完即停”">
+                            <AlertTriangle size={15} />
+                          </span>
+                        )}
+                        {oneClick && added.has(p.id) ? (
+                          <button className="btn" disabled title="已开通。平台条款不允许一人多个账号">
+                            <Check size={15} /> 已开通
+                          </button>
+                        ) : oneClick ? (
+                          <button className="btn primary" disabled={busy} onClick={connect}>
+                            <Zap size={15} /> {busy ? "等待浏览器授权" : "一键开通"}
+                          </button>
+                        ) : p.api_usable ? (
+                          <button className="btn" onClick={() => setAdding(p)}>
+                            <Plus size={15} /> 添加 Key
+                          </button>
+                        ) : null}
+                        <IconBtn label={`去 ${pname(p)} 注册`} onClick={() => api.openUrl(p.signup.url)}>
+                          <ExternalLink size={16} />
+                        </IconBtn>
+                        <IconBtn label={expanded ? "收起" : "详情"} onClick={() => setOpen(expanded ? null : p.id)}>
+                          <ChevronDown size={17} className={expanded ? "flip" : ""} />
+                        </IconBtn>
+                      </div>
+                    </div>
+                    {expanded && <ProviderDetail p={p} onAdd={() => setAdding(p)} />}
                   </div>
-                  <div className="desc">{p.summary ?? p.homepage}</div>
-                </div>
-                <div className="row-stats">
-                  {p.quotas.slice(0, 2).map((x, i) => (
-                    <div key={i}>{quotaShort(x)}</div>
-                  ))}
-                </div>
-                <div className="row-actions" onClick={(e) => e.stopPropagation()}>
-                  {oneClick ? (
-                    <button className="btn primary sm" disabled={busy} onClick={connect}>
-                      <Zap size={14} /> {busy ? "等待授权…" : "一键开通"}
-                    </button>
-                  ) : (
-                    p.api_usable && (
-                      <button className="btn sm" onClick={() => setAdding(p)}>
-                        <Plus size={14} /> 添加 Key
-                      </button>
-                    )
-                  )}
-                  <IconBtn title="去注册" onClick={() => api.openUrl(p.signup.url)}>
-                    <ExternalLink size={17} />
-                  </IconBtn>
-                  <IconBtn title="详情" onClick={() => setOpen(expanded ? null : p.id)}>
-                    <ChevronDown size={18} className={expanded ? "flip" : ""} />
-                  </IconBtn>
-                </div>
-              </div>
-              {expanded && (
-                <div className="row-detail">
-                  <div className="kv">
-                    <span>免费额度</span>
-                    <ul>
-                      {p.quotas.map((x, i) => (
-                        <li key={i}>
-                          {quotaText(x)}{" "}
-                          <a onClick={() => api.openUrl(x.evidence)}>官方依据</a>
-                        </li>
-                      ))}
-                    </ul>
-                    <span>注册要求</span>
-                    <div>{p.signup.requires.map((r) => REQUIRES[r] ?? r).join("、") || "—"}{p.signup.notes ? `（${p.signup.notes}）` : ""}</div>
-                    {p.signup.regions_blocked.length > 0 && (
-                      <>
-                        <span>不支持地区</span>
-                        <div>{p.signup.regions_blocked.join("、")}</div>
-                      </>
-                    )}
-                    <span>额度用完后</span>
-                    <div className={p.overage === "auto_paid" ? "danger-text" : ""}>{OVERAGE[p.overage]}</div>
-                    {p.api && (
-                      <>
-                        <span>接口</span>
-                        <div className="mono">{p.api.base_url}</div>
-                      </>
-                    )}
-                    {(p.api?.free_models?.length ?? 0) > 0 && (
-                      <>
-                        <span>免费模型</span>
-                        <div>{p.api!.free_models.join("、")}</div>
-                      </>
-                    )}
-                    {p.terms.length > 0 && (
-                      <>
-                        <span>条款要点</span>
-                        <ul>
-                          {p.terms.map((t, i) => (
-                            <li key={i}>
-                              <a onClick={() => api.openUrl(t.url)}>{t.point}</a>
-                            </li>
-                          ))}
-                        </ul>
-                      </>
-                    )}
-                    <span>最后核实</span>
-                    <div>{p.last_verified}</div>
-                  </div>
-                  <div className="detail-actions">
-                    <button className="btn" onClick={() => api.openUrl(p.signup.url)}>
-                      <ExternalLink size={14} /> 去注册
-                    </button>
-                    {p.onboarding.key_page && (
-                      <button className="btn" onClick={() => api.openUrl(p.onboarding.key_page!)}>
-                        <KeyRound size={14} /> 打开 Key 页
-                      </button>
-                    )}
-                    {p.api_usable && (
-                      <button className="btn" onClick={() => setAdding(p)}>
-                        <Plus size={14} /> 粘贴 Key
-                      </button>
-                    )}
-                  </div>
-                </div>
-              )}
+                );
+              })}
             </div>
-          );
-        })}
-      </div>
+          </section>
+        ),
+      )}
 
       {adding && (
         <AddKeyDialog
@@ -338,56 +365,147 @@ function CatalogPage(props: { catalog: Catalog | null; accounts: Account[]; noti
   );
 }
 
+function ProviderDetail({ p, onAdd }: { p: Provider; onAdd: () => void }) {
+  return (
+    <div className="detail">
+      {p.overage === "auto_paid" && (
+        <div className="notice danger">
+          <AlertTriangle size={16} /> 免费额度用完后会自动转为付费。添加前先在平台控制台开启“用完即停”之类的保护。
+        </div>
+      )}
+      <dl className="kv">
+        <dt>免费额度</dt>
+        <dd>
+          <ul>
+            {p.quotas.map((x, i) => (
+              <li key={i}>
+                {quotaText(x)}
+                {x.note && <span className="muted">（{x.note}）</span>}{" "}
+                <a onClick={() => api.openUrl(x.evidence)}>官方依据</a>
+              </li>
+            ))}
+          </ul>
+        </dd>
+        <dt>注册要求</dt>
+        <dd>
+          {p.signup.requires.map((r) => REQUIRES[r] ?? r).join("、") || "—"}
+          {p.signup.notes && <span className="muted">（{p.signup.notes}）</span>}
+        </dd>
+        {p.signup.regions_blocked.length > 0 && (
+          <>
+            <dt>不支持地区</dt>
+            <dd>{p.signup.regions_blocked.join("、")}</dd>
+          </>
+        )}
+        <dt>额度用完后</dt>
+        <dd className={p.overage === "auto_paid" ? "danger-text" : ""}>{OVERAGE[p.overage]}</dd>
+        {p.api && (
+          <>
+            <dt>接口地址</dt>
+            <dd className="mono">{p.api.base_url}</dd>
+          </>
+        )}
+        {(p.api?.free_models?.length ?? 0) > 0 && (
+          <>
+            <dt>免费模型</dt>
+            <dd>{p.api!.free_models.join("、")}</dd>
+          </>
+        )}
+        {p.terms.length > 0 && (
+          <>
+            <dt>条款要点</dt>
+            <dd>
+              <ul>
+                {p.terms.map((t, i) => (
+                  <li key={i}>
+                    <a onClick={() => api.openUrl(t.url)}>{t.point}</a>
+                  </li>
+                ))}
+              </ul>
+            </dd>
+          </>
+        )}
+        <dt>最后核实</dt>
+        <dd className="num">{p.last_verified}</dd>
+      </dl>
+      <div className="detail-actions">
+        <button className="btn" onClick={() => api.openUrl(p.signup.url)}>
+          <ExternalLink size={15} /> 去注册
+        </button>
+        {p.onboarding.key_page && (
+          <button className="btn" onClick={() => api.openUrl(p.onboarding.key_page!)}>
+            <KeyRound size={15} /> 打开 Key 页面
+          </button>
+        )}
+        {p.api_usable && (
+          <button className="btn" onClick={onAdd}>
+            <Plus size={15} /> 粘贴 Key
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function AddKeyDialog(props: { p: Provider; onClose: () => void; onAdded: (a: Account) => void }) {
   const { p } = props;
   const [key, setKey] = useState("");
   const [baseUrl, setBaseUrl] = useState(p.api?.base_url ?? "");
   const [err, setErr] = useState("");
+  const [saving, setSaving] = useState(false);
   const pattern = p.onboarding.key_pattern ? new RegExp(p.onboarding.key_pattern) : null;
   const mismatch = pattern && key.trim() !== "" && !pattern.test(key.trim());
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && props.onClose();
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [props]);
   return (
     <div className="modal" onClick={props.onClose}>
-      <div className="dialog" onClick={(e) => e.stopPropagation()}>
+      <div className="dialog" role="dialog" aria-modal="true" aria-labelledby="add-key-title" onClick={(e) => e.stopPropagation()}>
         <div className="dialog-head">
-          <Avatar name={providerName(p)} id={p.id} />
+          <Avatar name={pname(p)} seed={p.id} size={44} />
           <div>
-            <h3>添加 {providerName(p)} 的 Key</h3>
-            <p className="muted small">Key 只保存在本机系统钥匙串里，不会上传。</p>
+            <h3 id="add-key-title">添加 {pname(p)}</h3>
+            <p>Key 只保存在这台电脑的系统钥匙串里。</p>
           </div>
         </div>
-        <label>
-          API Key
-          <input type="password" autoFocus value={key} onChange={(e) => setKey(e.target.value)} placeholder="粘贴平台上创建的 Key" />
+        <label className="field">
+          <span>API Key</span>
+          <input type="password" autoFocus value={key} onChange={(e) => setKey(e.target.value)} placeholder="粘贴在平台上创建的 Key" />
+          {mismatch && <small className="warn-text">格式和 {p.name} 的 Key 不太一样，确认没有贴错。</small>}
         </label>
-        {mismatch && <p className="warn-text">这个 Key 的格式和 {p.name} 不太一样，确认没有贴错？</p>}
-        <label>
-          接口地址
+        <label className="field">
+          <span>接口地址</span>
           <input className="mono" value={baseUrl} onChange={(e) => setBaseUrl(e.target.value)} />
+          {baseUrl.includes("ACCOUNT_ID") && <small className="warn-text">把地址里的 ACCOUNT_ID 换成你的账户 ID。</small>}
         </label>
-        {baseUrl.includes("ACCOUNT_ID") && <p className="warn-text">请把地址里的 ACCOUNT_ID 换成你的账户 ID。</p>}
         {err && <p className="danger-text">{err}</p>}
         <div className="dialog-actions">
           {p.onboarding.key_page && (
-            <button className="btn ghost" onClick={() => api.openUrl(p.onboarding.key_page!)}>
-              <ExternalLink size={14} /> 去平台创建 Key
+            <button className="btn link" onClick={() => api.openUrl(p.onboarding.key_page!)}>
+              还没有 Key？去平台创建
             </button>
           )}
-          <div className="spacer" />
+          <span className="spacer" />
           <button className="btn" onClick={props.onClose}>
             取消
           </button>
           <button
             className="btn primary"
-            disabled={!key.trim()}
+            disabled={!key.trim() || saving}
             onClick={async () => {
+              setSaving(true);
               try {
                 props.onAdded(await api.addAccount(p.id, key, baseUrl !== p.api?.base_url ? baseUrl : undefined));
               } catch (e) {
                 setErr(String(e));
+              } finally {
+                setSaving(false);
               }
             }}
           >
-            保存
+            保存 Key
           </button>
         </div>
       </div>
@@ -397,223 +515,253 @@ function AddKeyDialog(props: { p: Provider; onClose: () => void; onAdded: (a: Ac
 
 /* ---------- 我的账号 ---------- */
 
-function remainingText(u: AccountUsage | undefined): { text: string; low: boolean }[] {
-  if (!u) return [];
-  return u.limits.slice(0, 2).map((l) => {
-    const left = Math.max(0, 1 - l.used / l.cap);
-    const period = l.label.split(" / ")[1] ?? "";
-    const name = { minute: "每分钟", day: "今日", month: "本月", "one-time": "总额", hour: "每小时", week: "本周", second: "每秒" }[period] ?? "";
-    return { text: `${name}剩余 ${Math.round(left * 100)}%`, low: left < 0.2 };
-  });
-}
+const PERIOD_NAME: Record<string, string> = { second: "每秒", minute: "每分钟", hour: "每小时", day: "今日", week: "本周", month: "本月", "one-time": "总额" };
 
-function AccountsPage(props: { accounts: Account[]; catalog: Catalog | null; onChange: () => void; notify: Notify }) {
-  const [usage, setUsage] = useState<AccountUsage[]>([]);
-  const [open, setOpen] = useState<string | null>(null);
-  useEffect(() => {
-    api.usage().then(setUsage);
-  }, [props.accounts]);
-
-  if (props.accounts.length === 0)
-    return (
-      <div className="empty">
-        <KeyRound size={36} />
-        <p>还没有账号</p>
-        <p className="muted small">去“免费额度”里一键开通，或在平台注册后粘贴 Key。</p>
-      </div>
-    );
-
+function Meter({ l, compact }: { l: LimitUsage; compact?: boolean }) {
+  const pct = Math.min(100, (l.used / l.cap) * 100);
+  const period = l.label.split(" / ")[1] ?? "";
+  const tone = pct >= 100 ? "full" : pct >= 80 ? "high" : "";
   return (
-    <div className="rows">
-      {props.accounts.map((a) => {
-        const u = usage.find((x) => x.account_id === a.id);
-        const expanded = open === a.id;
-        return (
-          <div key={a.id} className={`row ${a.enabled ? "" : "disabled"} ${expanded ? "expanded" : ""}`}>
-            <div className="row-main" onClick={() => setOpen(expanded ? null : a.id)}>
-              <Avatar name={a.label} id={a.provider_id} />
-              <div className="row-title">
-                <div className="name">
-                  {a.label} <code className="tag plain">{a.id}</code>
-                  {u?.blocked_until && <span className="tag danger">平台限流中</span>}
-                  {!a.enabled && <span className="tag">已停用</span>}
-                </div>
-                <div className="desc mono">{a.base_url}</div>
-              </div>
-              <div className="row-stats">
-                {remainingText(u).map((r, i) => (
-                  <div key={i} className={r.low ? "danger-text" : ""}>
-                    {r.text}
-                  </div>
-                ))}
-                {u && u.limits.length === 0 && <div className="muted">以平台计量为准</div>}
-              </div>
-              <div className="row-actions" onClick={(e) => e.stopPropagation()}>
-                <IconBtn
-                  title="测试连接"
-                  onClick={async () => {
-                    try {
-                      props.notify(true, await api.testAccount(a.id));
-                    } catch (e) {
-                      props.notify(false, String(e));
-                    }
-                  }}
-                >
-                  <Play size={17} />
-                </IconBtn>
-                <label className="switch" title={a.enabled ? "停用" : "启用"}>
-                  <input
-                    type="checkbox"
-                    checked={a.enabled}
-                    onChange={async (e) => {
-                      await api.setEnabled(a.id, e.target.checked);
-                      props.onChange();
-                    }}
-                  />
-                  <span />
-                </label>
-                <IconBtn title="更多" onClick={() => setOpen(expanded ? null : a.id)}>
-                  <ChevronDown size={18} className={expanded ? "flip" : ""} />
-                </IconBtn>
-              </div>
-            </div>
-            {expanded && (
-              <div className="row-detail">
-                <div className="kv">
-                  <span>本地上限</span>
-                  <div>
-                    用免费额度的
-                    <select
-                      value={a.margin}
-                      onChange={async (e) => {
-                        await api.setMargin(a.id, Number(e.target.value));
-                        props.onChange();
-                      }}
-                    >
-                      {[0.5, 0.7, 0.8, 0.9, 0.95, 1].map((m) => (
-                        <option key={m} value={m}>
-                          {Math.round(m * 100)}%
-                        </option>
-                      ))}
-                    </select>
-                    ，留出余量避免超额
-                  </div>
-                  <span>模型名写法</span>
-                  <div className="mono">{a.id}/&lt;平台上的模型名&gt;</div>
-                  <span>添加时间</span>
-                  <div>{new Date(a.added_at).toLocaleString()}</div>
-                </div>
-                <div className="detail-actions">
-                  <div className="spacer" />
-                  <button
-                    className="btn danger"
-                    onClick={async () => {
-                      if (!window.confirm(`删除账号 ${a.id}？本机保存的 Key 和用量记录会一起删除。`)) return;
-                      await api.removeAccount(a.id);
-                      props.onChange();
-                    }}
-                  >
-                    <Trash2 size={14} /> 删除账号
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-        );
-      })}
+    <div className={`meter ${compact ? "compact" : ""}`}>
+      <div className="meter-label">
+        <span>
+          {PERIOD_NAME[period] ?? period}
+          {l.unit === "tokens" ? " Token" : ""}
+        </span>
+        <span className="num">
+          {fmt(l.used)} / {fmt(l.cap)}
+        </span>
+      </div>
+      <div className="meter-track">
+        <div className={`meter-fill ${tone}`} style={{ width: `${pct}%` }} />
+      </div>
     </div>
   );
 }
 
-/* ---------- 用量统计 ---------- */
+const fmt = (n: number) => (n >= 1e6 ? `${+(n / 1e6).toFixed(2)}M` : n >= 1e4 ? `${+(n / 1e3).toFixed(1)}K` : n.toLocaleString());
 
-function UsagePage() {
-  const [rows, setRows] = useState<AccountUsage[]>([]);
+function AccountsPage(props: { accounts: Account[]; usage: AccountUsage[]; onChange: () => void; notify: Notify; onBrowse: () => void }) {
+  const [open, setOpen] = useState<string | null>(null);
+  return (
+    <>
+      <PageHead title="我的账号" sub="Key 保存在系统钥匙串里，这里只记录账号和用量。">
+        <button className="btn primary" onClick={props.onBrowse}>
+          <Plus size={15} /> 添加账号
+        </button>
+      </PageHead>
+      {props.accounts.length === 0 ? (
+        <div className="empty">
+          <KeyRound size={28} />
+          <h3>还没有账号</h3>
+          <p>在“免费额度”里一键开通 OpenRouter，或者去平台注册后粘贴 Key。</p>
+          <button className="btn primary" onClick={props.onBrowse}>
+            浏览免费额度
+          </button>
+        </div>
+      ) : (
+        <div className="list">
+          {props.accounts.map((a) => {
+            const u = props.usage.find((x) => x.account_id === a.id);
+            const expanded = open === a.id;
+            return (
+              <div key={a.id} className="item" data-open={expanded || undefined} data-off={!a.enabled || undefined}>
+                <div className="item-main" onClick={() => setOpen(expanded ? null : a.id)}>
+                  <Avatar name={a.label} seed={a.provider_id} />
+                  <div className="item-title">
+                    <div className="name">
+                      {a.label}
+                      <code className="chip plain">{a.id}</code>
+                      {u?.blocked_until && <span className="chip danger">平台限流到 {new Date(u.blocked_until).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>}
+                      {!a.enabled && <span className="chip">已停用</span>}
+                    </div>
+                    <div className="desc mono">{a.base_url}</div>
+                  </div>
+                  <div className="meters">
+                    {u && u.limits.length > 0 ? u.limits.slice(0, 2).map((l, i) => <Meter key={i} l={l} compact />) : <span className="muted small">按平台计量</span>}
+                  </div>
+                  <div className="item-actions" onClick={(e) => e.stopPropagation()}>
+                    <IconBtn
+                      label="测试连接"
+                      onClick={async () => {
+                        try {
+                          props.notify(true, await api.testAccount(a.id));
+                        } catch (e) {
+                          props.notify(false, String(e));
+                        }
+                      }}
+                    >
+                      <Play size={16} />
+                    </IconBtn>
+                    <label className="toggle bare" title={a.enabled ? "停用这个账号" : "启用这个账号"}>
+                      <input
+                        type="checkbox"
+                        checked={a.enabled}
+                        aria-label="启用"
+                        onChange={async (e) => {
+                          await api.setEnabled(a.id, e.target.checked);
+                          props.onChange();
+                        }}
+                      />
+                      <span className="track" />
+                    </label>
+                    <IconBtn label={expanded ? "收起" : "设置"} onClick={() => setOpen(expanded ? null : a.id)}>
+                      <ChevronDown size={17} className={expanded ? "flip" : ""} />
+                    </IconBtn>
+                  </div>
+                </div>
+                {expanded && (
+                  <div className="detail">
+                    <dl className="kv">
+                      <dt>本地上限</dt>
+                      <dd>
+                        用到免费额度的
+                        <select
+                          value={a.margin}
+                          onChange={async (e) => {
+                            await api.setMargin(a.id, Number(e.target.value));
+                            props.onChange();
+                          }}
+                        >
+                          {[0.5, 0.7, 0.8, 0.9, 0.95, 1].map((m) => (
+                            <option key={m} value={m}>
+                              {Math.round(m * 100)}%
+                            </option>
+                          ))}
+                        </select>
+                        就停，留出余量
+                      </dd>
+                      <dt>模型名</dt>
+                      <dd className="mono">{a.id}/&lt;平台上的模型名&gt;</dd>
+                      <dt>添加时间</dt>
+                      <dd className="num">{new Date(a.added_at).toLocaleString()}</dd>
+                    </dl>
+                    <div className="detail-actions">
+                      <span className="spacer" />
+                      <button
+                        className="btn danger"
+                        onClick={async () => {
+                          if (!window.confirm(`删除 ${a.label}（${a.id}）？这台电脑上保存的 Key 和用量记录会一起删除。`)) return;
+                          await api.removeAccount(a.id);
+                          props.onChange();
+                        }}
+                      >
+                        <Trash2 size={15} /> 删除账号
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </>
+  );
+}
+
+/* ---------- 用量 ---------- */
+
+function HourlyChart({ log }: { log: UsageRow[] }) {
+  const now = Date.now();
+  const buckets = Array.from({ length: 24 }, (_, i) => {
+    const end = now - (23 - i) * 3600e3;
+    return { end, n: log.filter((r) => r.ts > end - 3600e3 && r.ts <= end).length };
+  });
+  const max = Math.max(1, ...buckets.map((b) => b.n));
+  return (
+    <div className="chart" role="img" aria-label="近 24 小时每小时请求数">
+      {buckets.map((b, i) => (
+        <div key={i} className={i === 23 ? "chart-col now" : "chart-col"} title={`${new Date(b.end).getHours()}:00 前一小时：${b.n} 次`}>
+          <div className="chart-bar" style={{ height: `${(b.n / max) * 100}%` }} />
+        </div>
+      ))}
+      <div className="chart-axis">
+        <span>24 小时前</span>
+        <span>12 小时前</span>
+        <span>现在</span>
+      </div>
+    </div>
+  );
+}
+
+function UsagePage({ usage }: { usage: AccountUsage[] }) {
   const [log, setLog] = useState<UsageRow[]>([]);
   const [tab, setTab] = useState<"limits" | "log">("limits");
   useEffect(() => {
-    const load = () => {
-      api.usage().then(setRows);
-      api.recentRequests(100).then(setLog);
-    };
+    const load = () => api.recentRequests(500).then(setLog);
     load();
-    const t = window.setInterval(load, 3000);
+    const t = window.setInterval(load, 4000);
     return () => window.clearInterval(t);
   }, []);
 
-  const req = rows.reduce((s, r) => s + r.today_requests, 0);
-  const tok = rows.reduce((s, r) => s + r.today_tokens, 0);
-  const blocked = rows.filter((r) => r.blocked_until).length;
-  const near = rows.filter((r) => r.limits.some((l) => l.used / l.cap >= 0.8)).length;
+  const req = usage.reduce((s, r) => s + r.today_requests, 0);
+  const tok = usage.reduce((s, r) => s + r.today_tokens, 0);
+  const near = usage.filter((r) => r.limits.some((l) => l.used / l.cap >= 0.8)).length;
+  const blocked = usage.filter((r) => r.blocked_until).length;
 
   return (
     <>
-      <div className="stats">
-        <div className="stat">
-          <span>近 24 小时请求</span>
-          <b>{req.toLocaleString()}</b>
+      <PageHead title="用量" sub="在这台电脑上记账，按每个平台的免费额度限量。" />
+      <div className="summary">
+        <div className="figures">
+          <div>
+            <span>近 24 小时请求</span>
+            <b className="num">{req.toLocaleString()}</b>
+          </div>
+          <div>
+            <span>近 24 小时 tokens</span>
+            <b className="num">{fmt(tok)}</b>
+          </div>
+          <div>
+            <span>接近上限</span>
+            <b className={`num ${near ? "warn-text" : ""}`}>{near}</b>
+          </div>
+          <div>
+            <span>被平台限流</span>
+            <b className={`num ${blocked ? "danger-text" : ""}`}>{blocked}</b>
+          </div>
         </div>
-        <div className="stat">
-          <span>近 24 小时 Tokens</span>
-          <b>{tok >= 1e6 ? `${(tok / 1e6).toFixed(2)}M` : tok >= 1e3 ? `${(tok / 1e3).toFixed(1)}K` : tok}</b>
-        </div>
-        <div className="stat">
-          <span>接近上限的账号</span>
-          <b className={near ? "warn-text" : ""}>{near}</b>
-        </div>
-        <div className="stat">
-          <span>被平台限流</span>
-          <b className={blocked ? "danger-text" : ""}>{blocked}</b>
-        </div>
+        <HourlyChart log={log} />
       </div>
 
-      <div className="tabs">
-        <button className={tab === "limits" ? "on" : ""} onClick={() => setTab("limits")}>
-          额度进度
-        </button>
-        <button className={tab === "log" ? "on" : ""} onClick={() => setTab("log")}>
-          请求日志
-        </button>
-      </div>
+      <Segmented
+        label="视图"
+        value={tab}
+        onChange={setTab}
+        options={[
+          ["limits", "额度进度"],
+          ["log", "请求记录"],
+        ]}
+      />
 
       {tab === "limits" &&
-        (rows.length === 0 ? (
-          <p className="muted">还没有账号。</p>
+        (usage.length === 0 ? (
+          <div className="empty small-empty">还没有账号，添加后这里会显示每个账号的额度进度。</div>
         ) : (
-          <div className="rows">
-            {rows.map((u) => (
-              <div className="row" key={u.account_id}>
-                <div className="row-main static">
-                  <Avatar name={u.label} id={u.account_id} />
-                  <div className="row-title">
+          <div className="list spaced">
+            {usage.map((u) => (
+              <div key={u.account_id} className="item static">
+                <div className="item-main">
+                  <Avatar name={u.label} seed={u.account_id} size={36} />
+                  <div className="item-title">
                     <div className="name">
-                      {u.label} <code className="tag plain">{u.account_id}</code>
-                      {u.blocked_until && <span className="tag danger">暂停到 {new Date(u.blocked_until).toLocaleTimeString()}</span>}
+                      {u.label} <code className="chip plain">{u.account_id}</code>
+                      {u.blocked_until && <span className="chip danger">{u.blocked_reason}</span>}
                     </div>
                     <div className="desc">
-                      近 24 小时 {u.today_requests} 次 · {u.today_tokens.toLocaleString()} tokens
+                      近 24 小时 <span className="num">{u.today_requests}</span> 次，<span className="num">{fmt(u.today_tokens)}</span> tokens
                     </div>
                   </div>
                 </div>
-                <div className="bars">
-                  {u.limits.length === 0 && <p className="muted small">这个平台的额度单位（积分、余额等）无法在本机计数，以平台返回为准。</p>}
-                  {u.limits.map((l, i) => {
-                    const pct = Math.min(100, (l.used / l.cap) * 100);
-                    return (
-                      <div className="bar-row" key={i}>
-                        <div className="bar-label">
-                          <span>{l.label}</span>
-                          <span className="muted">
-                            {l.used.toLocaleString()} / {l.cap.toLocaleString()}
-                            {l.resets_at && ` · ${new Date(l.resets_at).toLocaleString()} 重置`}
-                          </span>
-                        </div>
-                        <div className="bar">
-                          <div className={`fill ${pct >= 100 ? "full" : pct >= 80 ? "high" : ""}`} style={{ width: `${pct}%` }} />
-                        </div>
-                      </div>
-                    );
-                  })}
+                <div className="meters-wide">
+                  {u.limits.length === 0 && <p className="muted small">这个平台按积分或余额计量，没法在本机精确计数，以平台返回为准。</p>}
+                  {u.limits.map((l, i) => (
+                    <div key={i}>
+                      <Meter l={l} />
+                      {l.resets_at && <small className="muted">{new Date(l.resets_at).toLocaleString([], { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" })} 重置</small>}
+                    </div>
+                  ))}
                 </div>
               </div>
             ))}
@@ -628,29 +776,29 @@ function UsagePage() {
                 <th>时间</th>
                 <th>账号</th>
                 <th>模型</th>
-                <th className="num">状态</th>
-                <th className="num">输入</th>
-                <th className="num">输出</th>
+                <th className="r">状态</th>
+                <th className="r">输入</th>
+                <th className="r">输出</th>
               </tr>
             </thead>
             <tbody>
               {log.length === 0 && (
                 <tr>
                   <td colSpan={6} className="muted center">
-                    还没有请求
+                    还没有请求。在其他工具里接入本机入口后，请求会出现在这里。
                   </td>
                 </tr>
               )}
-              {log.map((r, i) => (
+              {log.slice(0, 200).map((r, i) => (
                 <tr key={i}>
-                  <td>{new Date(r.ts).toLocaleTimeString()}</td>
-                  <td>
-                    <code>{r.account_id}</code>
-                  </td>
+                  <td className="num">{new Date(r.ts).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" })}</td>
+                  <td>{r.account_id}</td>
                   <td className="mono">{r.model}</td>
-                  <td className={`num ${r.status && r.status >= 400 ? "danger-text" : ""}`}>{r.status ?? "进行中"}</td>
-                  <td className="num">{r.prompt_tokens.toLocaleString()}</td>
-                  <td className="num">{r.completion_tokens.toLocaleString()}</td>
+                  <td className="r">
+                    <span className={`status ${r.status && r.status >= 400 ? "bad" : r.status ? "good" : ""}`}>{r.status ?? "进行中"}</span>
+                  </td>
+                  <td className="r num">{r.prompt_tokens.toLocaleString()}</td>
+                  <td className="r num">{r.completion_tokens.toLocaleString()}</td>
                 </tr>
               ))}
             </tbody>
@@ -663,23 +811,25 @@ function UsagePage() {
 
 /* ---------- 接入工具 ---------- */
 
-function CopyField({ label, value, notify }: { label: string; value: string; notify: Notify }) {
+function CopyRow({ label, value, hint, notify }: { label: string; value: string; hint?: string; notify: Notify }) {
   const [done, setDone] = useState(false);
   return (
-    <div className="copy-field">
-      <span>{label}</span>
-      <code>{value}</code>
+    <div className="copy-row">
+      <div>
+        <span className="copy-label">{label}</span>
+        <code>{value}</code>
+        {hint && <small className="muted">{hint}</small>}
+      </div>
       <button
-        className="icon-btn"
-        title="复制"
+        className="btn"
         onClick={async () => {
           await navigator.clipboard.writeText(value);
           setDone(true);
-          notify(true, `已复制 ${label}`);
+          notify(true, `已复制${label}`);
           window.setTimeout(() => setDone(false), 1500);
         }}
       >
-        {done ? <Check size={16} /> : <Copy size={16} />}
+        {done ? <Check size={15} /> : <Copy size={15} />} {done ? "已复制" : "复制"}
       </button>
     </div>
   );
@@ -687,42 +837,40 @@ function CopyField({ label, value, notify }: { label: string; value: string; not
 
 function ConnectPage(props: { accounts: Account[]; catalog: Catalog | null; baseUrl: string | null; notify: Notify }) {
   const base = props.baseUrl ?? "http://127.0.0.1:17890/v1";
-  const ex = props.accounts[0];
+  const ex = props.accounts.find((a) => a.enabled) ?? props.accounts[0];
   const free = ex && props.catalog?.providers.find((p) => p.id === ex.provider_id)?.api?.free_models?.[0];
-  const model = ex ? `${ex.id}/${free ?? "<模型名>"}` : "<账号>/<模型名>";
+  const model = ex ? `${ex.id}/${free ?? "模型名"}` : "账号/模型名";
   return (
-    <div className="connect">
-      <div className="panel">
-        <h3>OpenAI 兼容入口</h3>
-        <p className="muted">
-          只监听本机 127.0.0.1。羊毛switch 用你自己的 Key 直接请求平台，在本机记账并按额度限量，不经过任何第三方服务器。
-        </p>
-        <CopyField label="Base URL" value={base} notify={props.notify} />
-        <CopyField label="API Key" value="yangmao" notify={props.notify} />
-        <CopyField label="模型名" value={model} notify={props.notify} />
-        <p className="muted small">API Key 随意填写，真正的 Key 由本机钥匙串提供。模型名的斜杠前是“我的账号”里的账号名，后面是平台上的模型名。</p>
-      </div>
-      <div className="panel">
-        <h3>常见工具</h3>
-        <ul className="howto">
-          <li>
-            <b>Cherry Studio</b>：设置 → 模型服务 → 添加提供商（类型 OpenAI），填上面的 Base URL 和 API Key，再添加模型名。
-          </li>
-          <li>
-            <b>Cline / Roo Code</b>：API Provider 选 OpenAI Compatible，填 Base URL、API Key 和模型名。
-          </li>
-          <li>
-            <b>任何 OpenAI SDK</b>：把 <code>base_url</code> 设为上面的地址即可。
-          </li>
-        </ul>
-      </div>
-      <div className="panel">
-        <h3>curl 测试</h3>
-        <pre>{`curl ${base}/chat/completions \\
+    <>
+      <PageHead title="接入工具" sub="在任何支持 OpenAI 接口的工具里，把地址换成本机入口即可。" />
+      <div className="connect">
+        <section className="panel">
+          <h3>填这三项</h3>
+          <CopyRow label="Base URL" value={base} hint="只监听 127.0.0.1，外部访问不到" notify={props.notify} />
+          <CopyRow label="API Key" value="yangmao" hint="随便填，真正的 Key 由系统钥匙串提供" notify={props.notify} />
+          <CopyRow label="模型名" value={model} hint="斜杠前是账号名，后面是平台上的模型名" notify={props.notify} />
+        </section>
+        <section className="panel">
+          <h3>常见工具</h3>
+          <dl className="kv tools">
+            <dt>Cherry Studio</dt>
+            <dd>设置 → 模型服务 → 添加，类型选 OpenAI，填 Base URL 和 API Key，再添加模型名。</dd>
+            <dt>Cline / Roo Code</dt>
+            <dd>API Provider 选 OpenAI Compatible，依次填三项。</dd>
+            <dt>OpenAI SDK</dt>
+            <dd>
+              创建客户端时把 <code>base_url</code> 设为上面的地址。
+            </dd>
+          </dl>
+        </section>
+        <section className="panel">
+          <h3>用 curl 试一下</h3>
+          <pre>{`curl ${base}/chat/completions \\
   -H "Content-Type: application/json" \\
   -d '{"model":"${model}","messages":[{"role":"user","content":"你好"}]}'`}</pre>
-        <p className="muted small">到达本地上限时返回 HTTP 429，错误码 local_quota_reached。</p>
+          <p className="muted small">到达本地上限时返回 HTTP 429，错误码 local_quota_reached，第二天（或窗口结束）自动恢复。</p>
+        </section>
       </div>
-    </div>
+    </>
   );
 }
