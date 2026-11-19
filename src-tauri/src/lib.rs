@@ -227,3 +227,23 @@ pub fn run() {
         .run(tauri::generate_context!())
         .expect("error while running YangmaoSwitch");
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn keychain_roundtrip() {
+        let id = "ym-selftest";
+        keychain_set(id, "sk-test-123").unwrap();
+        assert_eq!(Keychain.get(id).as_deref(), Some("sk-test-123"));
+        keychain_delete(id);
+        assert_eq!(Keychain.get(id), None);
+    }
+
+    #[test]
+    fn bundled_catalog_parses() {
+        let c = Catalog::from_json(BUNDLED_CATALOG).unwrap();
+        assert!(c.provider("openrouter").is_some());
+    }
+}
