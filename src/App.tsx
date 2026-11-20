@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import TitleBar, { isMac } from "./TitleBar";
 import SubmitDialog, { SubmitPrefill } from "./Submit";
+import { ModelLogo, ProviderLogo } from "./logos";
 import { api, Account, AccountUsage, Catalog, GatewayInfo, LimitUsage, ModelEntry, ModelSquare, SquareModel, Offer, Access, modelKey, quotaShort, priceText, ProviderModels, OVERAGE, Provider, quotaParts, quotaText, REQUIRES, UsageRow } from "./api";
 
 type Page = "home" | "catalog" | "models" | "accounts" | "usage" | "connect";
@@ -36,7 +37,7 @@ type Notify = (ok: boolean, text: string) => void;
 const PAGES: { id: Page; label: string; icon: typeof Gift }[] = [
   { id: "home", label: "首页", icon: House },
   { id: "models", label: "模型广场", icon: LayoutGrid },
-  { id: "catalog", label: "Providers", icon: Server },
+  { id: "catalog", label: "供应商", icon: Server },
   { id: "accounts", label: "我的账号", icon: KeyRound },
   { id: "usage", label: "用量", icon: BarChart3 },
   { id: "connect", label: "接入工具", icon: Plug },
@@ -128,7 +129,7 @@ export default function App() {
             }}
           />
         )}
-        {page === "home" && <HomePage catalog={catalog} notify={notify} onModels={(mp) => go("models", mp)} />}
+        {page === "home" && <HomePage catalog={catalog} notify={notify} onModels={(mp) => go("models", mp)} onProviders={() => go("catalog")} />}
         {page === "models" && <ModelsPage key={JSON.stringify(preset)} preset={preset} catalog={catalog} accounts={accounts} notify={notify} onOpenProvider={() => go("catalog")} />}
         {page === "accounts" && <AccountsPage accounts={accounts} usage={usage} onChange={reload} notify={notify} onBrowse={() => go("catalog")} />}
         {page === "usage" && <UsagePage usage={usage} />}
@@ -185,18 +186,6 @@ function PageHead(props: { title: string; sub?: ReactNode; children?: ReactNode 
   );
 }
 
-const AVATAR = ["#c2410c", "#1d4ed8", "#047857", "#6d28d9", "#b91c1c", "#0369a1", "#a16207", "#0f766e", "#be185d", "#4338ca"];
-function Avatar({ name, seed, size = 40 }: { name: string; seed: string; size?: number }) {
-  let h = 0;
-  for (const c of seed) h = (h * 31 + c.charCodeAt(0)) >>> 0;
-  const color = AVATAR[h % AVATAR.length];
-  const ch = /[\u4e00-\u9fa5]/.test(name[0]) ? name[0] : name.replace(/[^A-Za-z0-9]/g, "").slice(0, 2);
-  return (
-    <div className="avatar" style={{ color, background: `${color}12`, width: size, height: size }} aria-hidden>
-      {ch}
-    </div>
-  );
-}
 
 function Segmented<T extends string>(props: { value: T; options: [T, string, number?][]; onChange: (v: T) => void; label: string }) {
   return (
@@ -243,8 +232,8 @@ function CatalogPage(props: { catalog: Catalog | null; accounts: Account[]; noti
   );
 
   const groups: [string, Provider[]][] = [
-    ["国内平台", list.filter((p) => p.region === "cn")],
-    ["海外平台", list.filter((p) => p.region === "global")],
+    ["国内供应商", list.filter((p) => p.region === "cn")],
+    ["海外供应商", list.filter((p) => p.region === "global")],
   ];
 
   const connect = async () => {
@@ -263,11 +252,11 @@ function CatalogPage(props: { catalog: Catalog | null; accounts: Account[]; noti
   return (
     <>
       <PageHead
-        title="Providers"
+        title="供应商"
         sub={
           props.catalog ? (
             <>
-              收录 <b className="num">{all.length}</b> 个平台，你已添加 <b className="num">{added.size}</b> 个 · 目录更新于 {props.catalog.generated_at?.slice(0, 10)}
+              收录 <b className="num">{all.length}</b> 个供应商，你已添加 <b className="num">{added.size}</b> 个 · 目录更新于 {props.catalog.generated_at?.slice(0, 10)}
             </>
           ) : (
             "正在加载目录…"
@@ -292,7 +281,7 @@ function CatalogPage(props: { catalog: Catalog | null; accounts: Account[]; noti
         />
         <label className="search">
           <Search size={15} />
-          <input placeholder="搜索平台或模型，如 DeepSeek" value={q} onChange={(e) => setQ(e.target.value)} />
+          <input placeholder="搜索供应商或模型，如 DeepSeek" value={q} onChange={(e) => setQ(e.target.value)} />
         </label>
         <label className="toggle">
           <input type="checkbox" checked={apiOnly} onChange={(e) => setApiOnly(e.target.checked)} />
@@ -301,7 +290,7 @@ function CatalogPage(props: { catalog: Catalog | null; accounts: Account[]; noti
         </label>
       </div>
 
-      {list.length === 0 && props.catalog && <div className="empty small-empty">没有符合条件的平台。换个关键词，或者切到“全部”。</div>}
+      {list.length === 0 && props.catalog && <div className="empty small-empty">没有符合条件的供应商。换个关键词，或者切到“全部”。</div>}
 
       {groups.map(([title, ps]) =>
         ps.length === 0 ? null : (
@@ -316,7 +305,7 @@ function CatalogPage(props: { catalog: Catalog | null; accounts: Account[]; noti
                 return (
                   <div key={p.id} className="item" data-open={expanded || undefined}>
                     <div className="item-main" onClick={() => setOpen(expanded ? null : p.id)}>
-                      <Avatar name={pname(p)} seed={p.id} />
+                      <ProviderLogo id={p.id} />
                       <div className="item-title">
                         <div className="name">
                           {pname(p)}
@@ -328,8 +317,8 @@ function CatalogPage(props: { catalog: Catalog | null; accounts: Account[]; noti
                       <div className="quotas">
                         {p.quotas.every((x) => x.amount == null) && (
                           <div className="quota">
-                            <b className="dim">见平台</b>
-                            <span>限额按平台公布</span>
+                            <b className="dim">见供应商</b>
+                            <span>限额按供应商公布</span>
                           </div>
                         )}
                         {p.quotas.filter((x) => x.amount != null).slice(0, 2).map((x, i) => {
@@ -344,12 +333,12 @@ function CatalogPage(props: { catalog: Catalog | null; accounts: Account[]; noti
                       </div>
                       <div className="item-actions" onClick={(e) => e.stopPropagation()}>
                         {p.overage === "auto_paid" && (
-                          <span className="risk" title="免费额度用完后会自动转为付费，记得在平台开启“用完即停”">
+                          <span className="risk" title="免费额度用完后会自动转为付费，记得在供应商开启“用完即停”">
                             <AlertTriangle size={15} />
                           </span>
                         )}
                         {oneClick && added.has(p.id) ? (
-                          <button className="btn" disabled title="已开通。平台条款不允许一人多个账号">
+                          <button className="btn" disabled title="已开通。供应商条款不允许一人多个账号">
                             <Check size={15} /> 已开通
                           </button>
                         ) : oneClick ? (
@@ -398,7 +387,7 @@ function ProviderDetail({ p, onAdd }: { p: Provider; onAdd: () => void }) {
     <div className="detail">
       {p.overage === "auto_paid" && (
         <div className="notice danger">
-          <AlertTriangle size={16} /> 免费额度用完后会自动转为付费。添加前先在平台控制台开启“用完即停”之类的保护。
+          <AlertTriangle size={16} /> 免费额度用完后会自动转为付费。添加前先在供应商控制台开启“用完即停”之类的保护。
         </div>
       )}
       <dl className="kv">
@@ -546,7 +535,7 @@ function AddKeyDialog(props: { p: Provider; onClose: () => void; onAdded: (a: Ac
     <div className="modal" onClick={props.onClose}>
       <div className="dialog" role="dialog" aria-modal="true" aria-labelledby="add-key-title" onClick={(e) => e.stopPropagation()}>
         <div className="dialog-head">
-          <Avatar name={pname(p)} seed={p.id} size={44} />
+          <ProviderLogo id={p.id} size={44} />
           <div>
             <h3 id="add-key-title">添加 {pname(p)}</h3>
             <p>Key 只保存在这台电脑的系统钥匙串里。</p>
@@ -554,7 +543,7 @@ function AddKeyDialog(props: { p: Provider; onClose: () => void; onAdded: (a: Ac
         </div>
         <label className="field">
           <span>API Key</span>
-          <input type="password" autoFocus value={key} onChange={(e) => setKey(e.target.value)} placeholder="粘贴在平台上创建的 Key" />
+          <input type="password" autoFocus value={key} onChange={(e) => setKey(e.target.value)} placeholder="粘贴在供应商上创建的 Key" />
           {mismatch && <small className="warn-text">格式和 {p.name} 的 Key 不太一样，确认没有贴错。</small>}
         </label>
         <label className="field">
@@ -566,7 +555,7 @@ function AddKeyDialog(props: { p: Provider; onClose: () => void; onAdded: (a: Ac
         <div className="dialog-actions">
           {p.onboarding.key_page && (
             <button className="btn link" onClick={() => api.openUrl(p.onboarding.key_page!)}>
-              还没有 Key？去平台创建
+              还没有 Key？去供应商创建
             </button>
           )}
           <span className="spacer" />
@@ -626,33 +615,35 @@ const ACCESS: Record<Access, { text: string; tone: string }> = {
 
 const daysAgo = (d?: string | null) => (d ? Math.floor((Date.now() - new Date(d.slice(0, 10)).getTime()) / 864e5) : Infinity);
 
-function HomePage(props: { catalog: Catalog | null; notify: Notify; onModels: (p: ModelsPreset) => void }) {
+function HomePage(props: { catalog: Catalog | null; notify: Notify; onModels: (p: ModelsPreset) => void; onProviders: () => void }) {
   const [data, setData] = useState<ModelSquare | null>(null);
   useEffect(() => {
     api.modelSquare().then(setData).catch((e) => props.notify(false, String(e)));
   }, []);
+  const provider = (id: string) => props.catalog?.providers.find((x) => x.id === id);
   const pName = (id: string) => {
-    const p = props.catalog?.providers.find((x) => x.id === id);
+    const p = provider(id);
     return p ? pname(p) : id;
   };
   if (!data) return <PageHead title="首页" sub="正在加载…" />;
   const models = [...data.models].sort((a, b) => (b.heat ?? 0) - (a.heat ?? 0));
-  const hot = models.slice(0, 6);
-  const fresh = models.filter((m) => daysAgo(m.created) <= 45).sort((a, b) => (b.created ?? "").localeCompare(a.created ?? "")).slice(0, 6);
-  const forever = models.filter((m) => m.offers.some((o) => o.access === "free")).slice(0, 6);
-  // free / free-quota offers first seen after tracking started
-  const newFree = models
-    .flatMap((m) => m.offers.filter((o) => o.access !== "paid" && o.since && o.since !== data.baseline && daysAgo(o.since) <= 14).map((o) => ({ m, o })))
-    .sort((a, b) => (b.o.since ?? "").localeCompare(a.o.since ?? ""))
-    .slice(0, 8);
+  const ROW = 4;
+  const hot = models.slice(0, ROW);
+  const fresh = models.filter((m) => daysAgo(m.created) <= 45).sort((a, b) => (b.created ?? "").localeCompare(a.created ?? "")).slice(0, ROW);
+  const forever = models.filter((m) => m.offers.some((o) => o.access === "free")).slice(0, ROW);
+  // popular providers: weight of the popular models they serve for free or on a free quota
+  const score = new Map<string, number>();
+  for (const m of models) for (const o of m.offers) if (o.access !== "paid" && provider(o.provider)) score.set(o.provider, (score.get(o.provider) ?? 0) + (m.heat ?? 0));
+  const topProviders = [...score.entries()].sort((a, b) => b[1] - a[1]).slice(0, ROW).map(([id]) => id);
+
   const card = (m: SquareModel) => (
     <button key={m.id} className="mcard" onClick={() => props.onModels({ open: m.id })}>
       <div className="mcard-head">
-        <Avatar name={m.vendor ?? m.name} seed={m.vendor ?? m.offers[0].provider} size={34} />
+        <ModelLogo m={m} size={34} />
         <div className="mcard-title">
           <b>{m.vendor ? `${m.vendor} / ${m.name}` : m.name}</b>
           <span>
-            {m.offers.length > 2 ? `${m.offers.slice(0, 2).map((o) => pName(o.provider)).join("、")} 等 ${m.offers.length} 个平台` : m.offers.map((o) => pName(o.provider)).join("、")}
+            {m.offers.length > 2 ? `${m.offers.slice(0, 2).map((o) => pName(o.provider)).join("、")} 等 ${m.offers.length} 个供应商` : m.offers.map((o) => pName(o.provider)).join("、")}
           </span>
         </div>
       </div>
@@ -668,6 +659,22 @@ function HomePage(props: { catalog: Catalog | null; notify: Notify; onModels: (p
       </div>
     </button>
   );
+  const pcard = (id: string) => {
+    const p = provider(id)!;
+    const pm = data.providers?.[id];
+    return (
+      <button key={id} className="mcard" onClick={props.onProviders}>
+        <div className="mcard-head">
+          <ProviderLogo id={id} size={34} />
+          <div className="mcard-title">
+            <b>{pname(p)}</b>
+            <span>{pm ? `模型 ${pm.total} 个（免费 ${pm.free} · 用免费额度 ${pm.quota}）` : ""}</span>
+          </div>
+        </div>
+        <p className="mcard-desc">{p.quotas[0] ? quotaText(p.quotas[0]) : ""}</p>
+      </button>
+    );
+  };
   const section = (title: string, sub: string, more: () => void, body: ReactNode) => (
     <section className="home-sec">
       <div className="sec-head">
@@ -679,7 +686,7 @@ function HomePage(props: { catalog: Catalog | null; notify: Notify; onModels: (p
           查看全部
         </button>
       </div>
-      {body}
+      <div className="model-grid one-row">{body}</div>
     </section>
   );
   return (
@@ -692,31 +699,10 @@ function HomePage(props: { catalog: Catalog | null; notify: Notify; onModels: (p
           </>
         }
       />
-      {section("热门模型", "按 OpenRouter 每日用量和提供平台数排序", () => props.onModels({ sort: "heat" }), <div className="model-grid">{hot.map(card)}</div>)}
-      {section(
-        "新上免费用量",
-        "最近 14 天新出现的免费模型或免费额度",
-        () => props.onModels({ sort: "new" }),
-        newFree.length ? (
-          <ul className="newfree">
-            {newFree.map(({ m, o }) => (
-              <li key={`${m.id}|${o.provider}`}>
-                <button onClick={() => props.onModels({ open: m.id })}>
-                  <Avatar name={pName(o.provider)} seed={o.provider} size={26} />
-                  <b>{m.name}</b>
-                  <span className="muted">{pName(o.provider)}</span>
-                  <span className={`mtag ${ACCESS[o.access ?? "free"].tone}`}>{ACCESS[o.access ?? "free"].text}</span>
-                  <span className="muted small num">{o.since}</span>
-                </button>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p className="muted small">从 {data.baseline ?? data.generated_at.slice(0, 10)} 开始记录，之后新上的免费模型和免费额度会显示在这里。</p>
-        ),
-      )}
-      {fresh.length > 0 && section("新模型", "最近 45 天上线、可以免费调用的模型", () => props.onModels({ sort: "new" }), <div className="model-grid">{fresh.map(card)}</div>)}
-      {section("不限期免费", "平台列为免费模型、不消耗额度（通常有限速），以平台公布为准", () => props.onModels({ access: "free" }), <div className="model-grid">{forever.map(card)}</div>)}
+      {section("热门免费模型", "按 OpenRouter 每日用量和提供它的供应商数排序", () => props.onModels({ sort: "heat" }), hot.map(card))}
+      {section("热门供应商", "按提供的热门免费模型排序", props.onProviders, topProviders.map(pcard))}
+      {fresh.length > 0 && section("新模型", "最近 45 天上线、可以免费调用的模型", () => props.onModels({ sort: "new" }), fresh.map(card))}
+      {section("不限期免费", "供应商列为免费模型、不消耗额度（通常有限速），以供应商公布为准", () => props.onModels({ access: "free" }), forever.map(card))}
     </>
   );
 }
@@ -819,8 +805,8 @@ function ModelsPage(props: { preset: ModelsPreset; catalog: Catalog | null; acco
           <option value="all">全部方式</option>
           <option value="free">只看免费模型</option>
         </select>
-        <select className="select" value={provider} onChange={(e) => setProvider(e.target.value)} aria-label="平台">
-          <option value="all">全部平台</option>
+        <select className="select" value={provider} onChange={(e) => setProvider(e.target.value)} aria-label="供应商">
+          <option value="all">全部供应商</option>
           {providers.map((p) => (
             <option key={p} value={p}>
               {pName(p)}
@@ -830,7 +816,7 @@ function ModelsPage(props: { preset: ModelsPreset; catalog: Catalog | null; acco
         <select className="select" value={sort} onChange={(e) => setSort(e.target.value as SortKey)} aria-label="排序">
           <option value="heat">按热度</option>
           <option value="new">最新上线</option>
-          <option value="platforms">平台最多</option>
+          <option value="platforms">供应商最多</option>
         </select>
       </div>
 
@@ -842,12 +828,12 @@ function ModelsPage(props: { preset: ModelsPreset; catalog: Catalog | null; acco
             <button key={m.id} className="mcard" onClick={() => setOpen(m)}>
               {isNew(m.created) && <span className="ribbon">New</span>}
               <div className="mcard-head">
-                <Avatar name={m.vendor ?? m.name} seed={m.vendor ?? m.offers[0].provider} size={34} />
+                <ModelLogo m={m} size={34} />
                 <div className="mcard-title">
                   <b>{m.vendor ? `${m.vendor} / ${m.name}` : m.name}</b>
                   <span>
                     {m.offers.length > 2
-                      ? `${m.offers.slice(0, 2).map((o) => pName(o.provider)).join("、")} 等 ${m.offers.length} 个平台`
+                      ? `${m.offers.slice(0, 2).map((o) => pName(o.provider)).join("、")} 等 ${m.offers.length} 个供应商`
                       : m.offers.map((o) => pName(o.provider)).join("、")}
                   </span>
                 </div>
@@ -870,7 +856,7 @@ function ModelsPage(props: { preset: ModelsPreset; catalog: Catalog | null; acco
         <div className="modal" onClick={() => setOpen(null)}>
           <div className="dialog wide" role="dialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>
             <div className="dialog-head">
-              <Avatar name={open.vendor ?? open.name} seed={open.vendor ?? open.offers[0].provider} size={44} />
+              <ModelLogo m={open} size={44} />
               <div style={{ flex: 1, minWidth: 0 }}>
                 <h3>{open.name}</h3>
                 <p>{open.vendor ?? pName(open.offers[0].provider)}</p>
@@ -921,7 +907,7 @@ function ModelsPage(props: { preset: ModelsPreset; catalog: Catalog | null; acco
             </dl>
             <div className="offers">
               <h4>
-                提供这个模型的平台 <span className="muted num">{open.offers.length}</span>
+                提供这个模型的供应商 <span className="muted num">{open.offers.length}</span>
               </h4>
               {open.offers.map((o) => {
                 const p = props.catalog?.providers.find((x) => x.id === o.provider);
@@ -929,7 +915,7 @@ function ModelsPage(props: { preset: ModelsPreset; catalog: Catalog | null; acco
                 const q = o.access !== "paid" && p?.quotas.length ? quotaShort(pickQuota(p, o.access)) : null;
                 return (
                 <div className="offer" key={o.provider}>
-                  <Avatar name={pName(o.provider)} seed={o.provider} size={30} />
+                  <ProviderLogo id={o.provider} size={30} />
                   <div className="offer-main">
                     <b>
                       {pName(o.provider)} <span className={`mtag ${acc.tone}`}>{acc.text}</span>
@@ -1014,9 +1000,9 @@ function AccountsPage(props: { accounts: Account[]; usage: AccountUsage[]; onCha
         <div className="empty">
           <KeyRound size={28} />
           <h3>还没有账号</h3>
-          <p>在 Providers 里一键开通 OpenRouter，或者去平台注册后粘贴 Key。</p>
+          <p>在“供应商”里一键开通 OpenRouter，或者去供应商注册后粘贴 Key。</p>
           <button className="btn primary" onClick={props.onBrowse}>
-            浏览 Providers
+            浏览供应商
           </button>
         </div>
       ) : (
@@ -1027,12 +1013,12 @@ function AccountsPage(props: { accounts: Account[]; usage: AccountUsage[]; onCha
             return (
               <div key={a.id} className="item" data-open={expanded || undefined} data-off={!a.enabled || undefined}>
                 <div className="item-main" onClick={() => setOpen(expanded ? null : a.id)}>
-                  <Avatar name={a.label} seed={a.provider_id} />
+                  <ProviderLogo id={a.provider_id} />
                   <div className="item-title">
                     <div className="name">
                       {a.label}
                       <code className="chip plain">{a.id}</code>
-                      {u?.blocked_until && <span className="chip danger">平台限流到 {new Date(u.blocked_until).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>}
+                      {u?.blocked_until && <span className="chip danger">供应商限流到 {new Date(u.blocked_until).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>}
                       {!a.enabled && <span className="chip">已停用</span>}
                     </div>
                     <div className="desc">
@@ -1041,7 +1027,7 @@ function AccountsPage(props: { accounts: Account[]; usage: AccountUsage[]; onCha
                     </div>
                   </div>
                   <div className="meters">
-                    {u && u.limits.length > 0 ? u.limits.slice(0, 2).map((l, i) => <Meter key={i} l={l} compact />) : <span className="muted small">按平台计量</span>}
+                    {u && u.limits.length > 0 ? u.limits.slice(0, 2).map((l, i) => <Meter key={i} l={l} compact />) : <span className="muted small">按供应商计量</span>}
                   </div>
                   <div className="item-actions" onClick={(e) => e.stopPropagation()}>
                     <IconBtn
@@ -1095,7 +1081,7 @@ function AccountsPage(props: { accounts: Account[]; usage: AccountUsage[]; onCha
                         就停，留出余量
                       </dd>
                       <dt>模型名</dt>
-                      <dd className="mono">{a.id}/&lt;平台上的模型名&gt;</dd>
+                      <dd className="mono">{a.id}/&lt;供应商上的模型名&gt;</dd>
                       <dt>使用顺序</dt>
                       <dd>
                         多个账号都有同一个模型时，按列表顺序使用，前一个用完自动换下一个。
@@ -1175,7 +1161,7 @@ function UsagePage({ usage }: { usage: AccountUsage[] }) {
 
   return (
     <>
-      <PageHead title="用量" sub="在这台电脑上记账，按每个平台的免费额度限量。" />
+      <PageHead title="用量" sub="在这台电脑上记账，按每个供应商的免费额度限量。" />
       <div className="summary">
         <div className="figures">
           <div>
@@ -1191,7 +1177,7 @@ function UsagePage({ usage }: { usage: AccountUsage[] }) {
             <b className={`num ${near ? "warn-text" : ""}`}>{near}</b>
           </div>
           <div>
-            <span>被平台限流</span>
+            <span>被供应商限流</span>
             <b className={`num ${blocked ? "danger-text" : ""}`}>{blocked}</b>
           </div>
         </div>
@@ -1216,7 +1202,7 @@ function UsagePage({ usage }: { usage: AccountUsage[] }) {
             {usage.map((u) => (
               <div key={u.account_id} className="item static">
                 <div className="item-main">
-                  <Avatar name={u.label} seed={u.account_id} size={36} />
+                  <ProviderLogo id={u.account_id} size={36} />
                   <div className="item-title">
                     <div className="name">
                       {u.label} <code className="chip plain">{u.account_id}</code>
@@ -1228,7 +1214,7 @@ function UsagePage({ usage }: { usage: AccountUsage[] }) {
                   </div>
                 </div>
                 <div className="meters-wide">
-                  {u.limits.length === 0 && <p className="muted small">这个平台按积分或余额计量，没法在本机精确计数，以平台返回为准。</p>}
+                  {u.limits.length === 0 && <p className="muted small">这个供应商按积分或余额计量，没法在本机精确计数，以供应商返回为准。</p>}
                   {u.limits.map((l, i) => (
                     <div key={i}>
                       <Meter l={l} />
@@ -1326,7 +1312,7 @@ function ConnectPage(props: { accounts: Account[]; gw: GatewayInfo | null; onGw:
   if (!gw) return null;
 
   const root = gw.base_url ?? `http://127.0.0.1:${gw.port}`;
-  const model = models[0]?.id ?? "平台上的模型名";
+  const model = models[0]?.id ?? "供应商上的模型名";
   const envPs = `$env:ANTHROPIC_BASE_URL="${root}"\n$env:ANTHROPIC_AUTH_TOKEN="${gw.api_key}"\n$env:ANTHROPIC_MODEL="${model}"\n$env:ANTHROPIC_DEFAULT_HAIKU_MODEL="${model}"\nclaude`;
   const envSh = `export ANTHROPIC_BASE_URL=${root}\nexport ANTHROPIC_AUTH_TOKEN=${gw.api_key}\nexport ANTHROPIC_MODEL=${model}\nexport ANTHROPIC_DEFAULT_HAIKU_MODEL=${model}\nclaude`;
 
@@ -1430,7 +1416,7 @@ function ConnectPage(props: { accounts: Account[]; gw: GatewayInfo | null; onGw:
             <>
               <CopyRow label="Base URL" value={`${root}/v1`} hint="Cherry Studio、Cline、OpenAI SDK 等" notify={props.notify} />
               <CopyRow label="API Key" value={gw.api_key} notify={props.notify} />
-              <CopyRow label="模型名" value={model} hint="直接用平台上的模型名，见下方列表" notify={props.notify} />
+              <CopyRow label="模型名" value={model} hint="直接用供应商上的模型名，见下方列表" notify={props.notify} />
             </>
           ) : (
             <>
@@ -1447,7 +1433,7 @@ function ConnectPage(props: { accounts: Account[]; gw: GatewayInfo | null; onGw:
                   macOS / Linux
                 </button>
               </CopyRow>
-              <p className="muted small">羊毛switch 只做转发，不转换格式：Claude 接口的请求只会发给提供原生 Claude 接口的平台（目前有智谱、硅基流动、AMD Radeon Cloud）。所选模型的平台没有 Claude 接口时会直接报错，请改用 OpenAI 接口。</p>
+              <p className="muted small">羊毛switch 只做转发，不转换格式：Claude 接口的请求只会发给提供原生 Claude 接口的供应商（目前有智谱、硅基流动、AMD Radeon Cloud）。所选模型的供应商没有 Claude 接口时会直接报错，请改用 OpenAI 接口。</p>
             </>
           )}
         </section>
@@ -1457,7 +1443,7 @@ function ConnectPage(props: { accounts: Account[]; gw: GatewayInfo | null; onGw:
             可用模型 <span className="muted num">{models.length}</span>
           </h3>
           <p className="muted small">
-            多个账号都有同一个模型时，按“我的账号”里的顺序使用，前一个到上限或被平台限流就自动换下一个。想固定用某个账号，模型名写成 <code>账号/模型名</code>。
+            多个账号都有同一个模型时，按“我的账号”里的顺序使用，前一个到上限或被供应商限流就自动换下一个。想固定用某个账号，模型名写成 <code>账号/模型名</code>。
           </p>
           {models.length === 0 ? (
             <div className="empty small-empty">还没有可用模型。先添加账号，再在“我的账号”里点“测试连接”获取模型列表。</div>

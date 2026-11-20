@@ -12,7 +12,7 @@ export interface SubmitPrefill {
 
 const KINDS: [SubmissionKind, string][] = [
   ["correction", "纠错"],
-  ["new_provider", "新平台"],
+  ["new_provider", "新供应商"],
   ["new_model", "新模型或新额度"],
   ["other", "其他"],
 ];
@@ -53,7 +53,7 @@ export default function SubmitDialog({ prefill, onClose, notify }: { prefill: Su
         <div className="dialog-head">
           <div style={{ flex: 1, minWidth: 0 }}>
             <h3 id="submit-title">提交 / 纠错</h3>
-            <p>提交新平台、新模型，或指出目录里的错误。登录后提交，我们核实后上架或更正。</p>
+            <p>提交新供应商、新模型，或指出目录里的错误。登录后提交，我们核实后上架或更正。</p>
           </div>
           <button className="icon-btn" aria-label="关闭" onClick={onClose}>
             <X size={18} />
@@ -241,7 +241,7 @@ function SubmitForm({ prefill, onDone }: { prefill: SubmitPrefill; onDone: () =>
         </select>
       </label>
       <label className="field">
-        <span>对象（平台或模型）</span>
+        <span>对象（供应商或模型）</span>
         <input className="mono" value={target} maxLength={200} onChange={(e) => setTarget(e.target.value)} placeholder="例如 siliconflow 或 deepseek/deepseek-v4.1-flash" />
       </label>
       <label className="field">
