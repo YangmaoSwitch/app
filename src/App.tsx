@@ -231,9 +231,20 @@ function CatalogPage(props: { catalog: Catalog | null; accounts: Account[]; noti
     [base, region, text],
   );
 
+  // rank by the popularity of the models each provider serves for free or on a free quota
+  const [square, setSquare] = useState<ModelSquare | null>(null);
+  useEffect(() => {
+    api.modelSquare().then(setSquare).catch(() => setSquare(null));
+  }, []);
+  const heat = useMemo(() => {
+    const h = new Map<string, number>();
+    for (const m of square?.models ?? []) for (const o of m.offers) if (o.access !== "paid") h.set(o.provider, (h.get(o.provider) ?? 0) + (m.heat ?? 0));
+    return h;
+  }, [square]);
+  const ranked = [...list].sort((a, b) => (heat.get(b.id) ?? 0) - (heat.get(a.id) ?? 0) || a.name.localeCompare(b.name));
   const groups: [string, Provider[]][] = [
-    ["国内供应商", list.filter((p) => p.region === "cn")],
-    ["海外供应商", list.filter((p) => p.region === "global")],
+    ["国内供应商", ranked.filter((p) => p.region === "cn")],
+    ["海外供应商", ranked.filter((p) => p.region === "global")],
   ];
 
   const connect = async () => {
