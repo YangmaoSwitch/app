@@ -250,6 +250,7 @@ export const REQUIRES: Record<string, string> = {
   github: "GitHub 账号",
   google: "Google 账号",
   cloud_account: "云账号",
+  qq: "QQ 号",
 };
 export const OVERAGE: Record<string, string> = {
   blocked: "用完即停",
