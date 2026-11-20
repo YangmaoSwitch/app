@@ -1,6 +1,6 @@
 {
  "version": 1,
- "generated_at": "2026-11-19T13:41:19+00:00",
+ "generated_at": "2026-11-20T03:23:00+00:00",
  "count": 14,
  "providers": [
   {
@@ -60,7 +60,25 @@
    "tags": [
     "聚合",
     "永久免费"
-   ]
+   ],
+   "en": {
+    "summary": "Free models on an aggregator platform, reset daily.",
+    "tags": [
+     "Aggregator",
+     "Always free"
+    ],
+    "quotas": [
+     {
+      "models": "Free models"
+     },
+     {
+      "models": "Free models"
+     },
+     {
+      "models": "Free models"
+     }
+    ]
+   }
   },
   {
    "id": "aliyun-bailian",
@@ -112,7 +130,22 @@
    ],
    "tags": [
     "新人"
-   ]
+   ],
+   "en": {
+    "summary": "New users get 1M tokens for each of several models, valid for 90 days; billing switches to paid by default when used up.",
+    "signup_notes": "Beijing (North China 2) region only",
+    "tags": [
+     "New users"
+    ],
+    "quotas": [
+     {
+      "note": "A separate allowance for each model"
+     }
+    ],
+    "terms": [
+     "“Stop when the free quota runs out” must be turned on manually; it is off by default"
+    ]
+   }
   },
   {
    "id": "amd-radeon-cloud",
@@ -166,7 +199,19 @@
    },
    "tags": [
     "每日赠送"
-   ]
+   ],
+   "en": {
+    "summary": "Daily credits, shared by 12 free models.",
+    "tags": [
+     "Daily credits"
+    ],
+    "quotas": [
+     {},
+     {
+      "condition": "Within 14 days of signing up"
+     }
+    ]
+   }
   },
   {
    "id": "cloudflare-workers-ai",
@@ -215,7 +260,17 @@
    ],
    "tags": [
     "永久免费"
-   ]
+   ],
+   "en": {
+    "summary": "The free plan includes 10,000 Neurons a day; requests over the limit return an error.",
+    "free_model_rule": "Some models are only available on paid plans",
+    "tags": [
+     "Always free"
+    ],
+    "terms": [
+     "Creating accounts in bulk with scripts or proxies is prohibited (2.2.1(e))"
+    ]
+   }
   },
   {
    "id": "cohere",
@@ -264,7 +319,19 @@
    },
    "tags": [
     "试用"
-   ]
+   ],
+   "en": {
+    "summary": "Trial keys are free, for testing and proofs of concept.",
+    "tags": [
+     "Trial"
+    ],
+    "quotas": [
+     {},
+     {
+      "models": "Chat endpoint"
+     }
+    ]
+   }
   },
   {
    "id": "google-ai-studio",
@@ -325,7 +392,23 @@
    ],
    "tags": [
     "永久免费"
-   ]
+   ],
+   "en": {
+    "summary": "Free tier of the Gemini API, rate-limited per project; the limits are shown in AI Studio.",
+    "signup_notes": "Users in the EEA, the UK and Switzerland can only use the paid service",
+    "tags": [
+     "Always free"
+    ],
+    "quotas": [
+     {
+      "note": "Requests per minute and tokens per minute are also limited; AI Studio shows the values per model"
+     }
+    ],
+    "terms": [
+     "Free-tier inputs and outputs are used to improve the products",
+     "Limits must not be circumvented"
+    ]
+   }
   },
   {
    "id": "groq",
@@ -372,7 +455,18 @@
    },
    "tags": [
     "永久免费"
-   ]
+   ],
+   "en": {
+    "summary": "Free tier rate-limited per organization; response headers report what is left.",
+    "tags": [
+     "Always free"
+    ],
+    "quotas": [
+     {
+      "note": "Requests per minute and tokens per minute/day are also limited; see the Limits page in the console"
+     }
+    ]
+   }
   },
   {
    "id": "modelscope",
@@ -419,7 +513,19 @@
    },
    "tags": [
     "每日赠送"
-   ]
+   ],
+   "en": {
+    "summary": "Daily credits (Mo-Li) for signing in; each call deducts credits by model tier.",
+    "signup_notes": "Requires linking an Alibaba Cloud account with real-name verification",
+    "tags": [
+     "Daily credits"
+    ],
+    "quotas": [
+     {
+      "note": "50 more a day after linking Alibaba Cloud; valid on the day only, no rollover; each call costs 0.5/1/2"
+     }
+    ]
+   }
   },
   {
    "id": "nvidia-nim",
@@ -462,7 +568,13 @@
    },
    "tags": [
     "试用"
-   ]
+   ],
+   "en": {
+    "summary": "Free for Developer Program members, for prototyping and testing only; the amount is still being verified.",
+    "tags": [
+     "Trial"
+    ]
+   }
   },
   {
    "id": "openrouter",
@@ -547,7 +659,32 @@
    "tags": [
     "聚合",
     "永久免费"
-   ]
+   ],
+   "en": {
+    "summary": "Aggregator; models whose names end in :free can be called for free.",
+    "free_model_rule": "Model ID ends in :free",
+    "tags": [
+     "Aggregator",
+     "Always free"
+    ],
+    "quotas": [
+     {
+      "models": ":free models"
+     },
+     {
+      "models": ":free models",
+      "condition": "Less than $10 in total top-ups"
+     },
+     {
+      "models": ":free models",
+      "condition": "$10 or more in total top-ups"
+     }
+    ],
+    "terms": [
+     "One person must not open multiple accounts to get around limits (7.3)",
+     "Free models also return 402 when the balance is negative"
+    ]
+   }
   },
   {
    "id": "siliconflow",
@@ -616,7 +753,27 @@
    "tags": [
     "永久免费",
     "新人"
-   ]
+   ],
+   "en": {
+    "summary": "Some models are free long-term (rate-limited per model); real-name verification earns a voucher.",
+    "tags": [
+     "Always free",
+     "New users"
+    ],
+    "quotas": [
+     {
+      "models": "Models marked “free” on the pricing page",
+      "note": "Rate-limited per model"
+     },
+     {
+      "condition": "Real-name verification",
+      "note": "Offer ends 2026-12-31"
+     }
+    ],
+    "terms": [
+     "Users may authorize third parties to store access tokens and credentials (1.1.3)"
+    ]
+   }
   },
   {
    "id": "tencent-hunyuan",
@@ -658,7 +815,13 @@
    },
    "tags": [
     "新人"
-   ]
+   ],
+   "en": {
+    "summary": "1M tokens one-time for Hunyuan text models, valid for 1 year; does not switch to paid when used up.",
+    "tags": [
+     "New users"
+    ]
+   }
   },
   {
    "id": "volcengine-ark",
@@ -705,7 +868,18 @@
    },
    "tags": [
     "新人"
-   ]
+   ],
+   "en": {
+    "summary": "New users get 500K tokens for each Doubao model; turning on “Worry-free trial mode” avoids charges.",
+    "tags": [
+     "New users"
+    ],
+    "quotas": [
+     {
+      "models": "Doubao-Seed-2.1-pro, Doubao-Seed-2.1-turbo and 2 more"
+     }
+    ]
+   }
   },
   {
    "id": "zhipu-bigmodel",
@@ -767,7 +941,23 @@
    ],
    "tags": [
     "永久免费"
-   ]
+   ],
+   "en": {
+    "summary": "GLM Flash models are free permanently.",
+    "signup_notes": "Non-Chinese phone numbers are supported",
+    "tags": [
+     "Always free"
+    ],
+    "quotas": [
+     {
+      "models": "Free Flash models",
+      "note": "Free models are not billed; rate-limited per model"
+     }
+    ],
+    "terms": [
+     "Free features are for non-commercial personal research and study only"
+    ]
+   }
   }
  ]
 }

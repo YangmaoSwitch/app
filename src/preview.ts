@@ -59,6 +59,14 @@ export async function mockInvoke(cmd: string, _args?: Record<string, unknown>): 
     case "set_port":
     case "set_api_key":
       return { running: true, base_url: "http://127.0.0.1:17890", port: 17890, api_key: "ym-3f9a0c27d18e4b6a90c1f2e7d5a8b3c4e6f1", error: null };
+    case "account_status":
+      return { available: true, github: true, user: null };
+    case "account_send_code":
+      return { resend_after: 60 };
+    case "account_verify":
+      return { id: 1, email: String(_args?.email ?? ""), github_login: null, name: null, admin: false };
+    case "my_submissions":
+      return [];
     case "list_models":
       return accounts.filter((a) => a.enabled).flatMap((a) => a.models.map((m) => ({ id: m, accounts: [a.id] })));
     case "test_account":

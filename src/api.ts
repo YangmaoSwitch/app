@@ -105,6 +105,9 @@ export interface SquareModel {
   hugging_face_id: string | null;
   description_source: string | null;
   offers: Offer[];
+  /** popularity score: OpenRouter daily tokens, number of free platforms, recency */
+  heat?: number;
+  openrouter_tokens_day?: number | null;
 }
 
 /** free = free model, quota = counted against the platform's free quota/credits, paid = paid only,
@@ -120,6 +123,8 @@ export interface Offer {
   access?: Access;
   /** USD per million tokens */
   price?: Price | null;
+  /** first day this free / free-quota offer was seen (YYYY-MM-DD) */
+  since?: string;
 }
 export interface ProviderModels {
   total: number;
@@ -139,6 +144,8 @@ export function modelKey(id: string): string {
 
 export interface ModelSquare {
   generated_at: string;
+  /** offers dated on this day were already listed when tracking started */
+  baseline?: string;
   providers?: Record<string, ProviderModels>;
   models: SquareModel[];
 }
@@ -152,7 +159,46 @@ export interface UsageRow {
   completion_tokens: number;
 }
 
+export interface AccountUser {
+  id: number;
+  email: string | null;
+  github_login: string | null;
+  name: string | null;
+  admin: boolean;
+}
+export interface AccountStatus {
+  available: boolean;
+  github: boolean;
+  user: AccountUser | null;
+}
+export type SubmissionKind = "correction" | "new_provider" | "new_model" | "other";
+export interface NewSubmission {
+  kind: SubmissionKind;
+  target?: string | null;
+  title: string;
+  body: string;
+  evidence_url?: string | null;
+  page_url?: string | null;
+  lang: "zh" | "en";
+}
+export interface Submission extends NewSubmission {
+  id: number;
+  status: "open" | "accepted" | "rejected" | "done";
+  admin_note: string | null;
+  created_at: number;
+  updated_at: number;
+}
+/** Where users without an account can still submit (needs a GitHub account). */
+export const GITHUB_SUBMIT = "https://github.com/YangmaoSwitch/catalog/issues/new/choose";
+
 export const api = {
+  accountStatus: () => invoke<AccountStatus>("account_status"),
+  accountSendCode: (email: string) => invoke<{ resend_after?: number }>("account_send_code", { email, lang: "zh" }),
+  accountVerify: (email: string, code: string) => invoke<AccountUser>("account_verify", { email, code }),
+  accountGithub: () => invoke<AccountUser>("account_github"),
+  accountLogout: () => invoke<void>("account_logout"),
+  submit: (entry: NewSubmission) => invoke<Submission>("submit_entry", { entry }),
+  mySubmissions: () => invoke<Submission[]>("my_submissions"),
   modelSquare: (refresh = false) => invoke<ModelSquare>("get_model_square", { refresh }),
   recentRequests: (limit = 100) => invoke<UsageRow[]>("recent_requests", { limit }),
   catalog: (refresh = false) => invoke<Catalog>("get_catalog", { refresh }),

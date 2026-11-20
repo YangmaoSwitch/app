@@ -39,6 +39,112 @@ fn keychain_delete(account_id: &str) {
     }
 }
 
+/* ---------- account service (sign-in and submissions) ---------- */
+
+/// Account service base URL, set at build time with YM_API_BASE; empty until the service is deployed.
+const ACCOUNT_API: &str = match option_env!("YM_API_BASE") {
+    Some(v) => v,
+    None => "",
+};
+/// Keychain entry holding the account service session token.
+const SESSION_ENTRY: &str = "__ym_session__";
+
+/// Error string for the frontend: the service's error code (e.g. "code_wrong"), or "network".
+async fn account_call(method: reqwest::Method, path: &str, body: Option<serde_json::Value>) -> Result<serde_json::Value, String> {
+    if ACCOUNT_API.is_empty() {
+        return Err("unavailable".into());
+    }
+    let client = reqwest::Client::builder().timeout(std::time::Duration::from_secs(20)).build().map_err(|_| "network".to_string())?;
+    let mut req = client.request(method, format!("{}{}", ACCOUNT_API.trim_end_matches('/'), path));
+    if let Some(tok) = Keychain.get(SESSION_ENTRY) {
+        req = req.bearer_auth(tok);
+    }
+    if let Some(b) = body {
+        req = req.json(&b);
+    }
+    let resp = req.send().await.map_err(|_| "network".to_string())?;
+    let status = resp.status();
+    let v: serde_json::Value = resp.json().await.unwrap_or(serde_json::Value::Null);
+    if status.is_success() {
+        return Ok(v);
+    }
+    if status.as_u16() == 401 {
+        keychain_delete(SESSION_ENTRY);
+    }
+    if status.as_u16() == 422 {
+        return Err("invalid".into());
+    }
+    Err(v.pointer("/detail/code").and_then(|c| c.as_str()).unwrap_or("network").to_string())
+}
+
+#[derive(Serialize)]
+struct AccountStatus {
+    /// false until the account service is deployed (no YM_API_BASE at build time)
+    available: bool,
+    /// GitHub sign-in is enabled on the service
+    github: bool,
+    user: Option<serde_json::Value>,
+}
+
+#[tauri::command]
+async fn account_status() -> AccountStatus {
+    if ACCOUNT_API.is_empty() {
+        return AccountStatus { available: false, github: false, user: None };
+    }
+    let github = account_call(reqwest::Method::GET, "/api/health", None)
+        .await
+        .ok()
+        .and_then(|h| h.get("github").and_then(|g| g.as_bool()))
+        .unwrap_or(false);
+    let user = if Keychain.get(SESSION_ENTRY).is_some() { account_call(reqwest::Method::GET, "/api/me", None).await.ok() } else { None };
+    AccountStatus { available: true, github, user }
+}
+
+/// GitHub sign-in: the service redirects back to a one-off 127.0.0.1 listener with the session token.
+#[tauri::command]
+async fn account_github(app: tauri::AppHandle) -> R<serde_json::Value> {
+    if ACCOUNT_API.is_empty() {
+        return Err("unavailable".into());
+    }
+    let listener = tokio::net::TcpListener::bind(("127.0.0.1", 0)).await.map_err(s)?;
+    let port = listener.local_addr().map_err(s)?.port();
+    let url = format!("{}/api/auth/github/start?client=app&port={port}", ACCOUNT_API.trim_end_matches('/'));
+    app.opener().open_url(url, None::<&str>).map_err(s)?;
+    let params = ym_core::oauth::wait_callback(listener, std::time::Duration::from_secs(600)).await.map_err(s)?;
+    let token = params.iter().find(|(k, _)| k == "token").map(|(_, v)| v.clone()).ok_or("github_failed")?;
+    keychain_set(SESSION_ENTRY, &token)?;
+    account_call(reqwest::Method::GET, "/api/me", None).await
+}
+
+#[tauri::command]
+async fn account_send_code(email: String, lang: String) -> R<serde_json::Value> {
+    account_call(reqwest::Method::POST, "/api/auth/email/send", Some(serde_json::json!({ "email": email, "lang": lang }))).await
+}
+
+#[tauri::command]
+async fn account_verify(email: String, code: String) -> R<serde_json::Value> {
+    let v = account_call(reqwest::Method::POST, "/api/auth/email/verify", Some(serde_json::json!({ "email": email, "code": code, "client": "app" }))).await?;
+    let token = v.get("token").and_then(|t| t.as_str()).ok_or("network")?;
+    keychain_set(SESSION_ENTRY, token)?;
+    Ok(v.get("user").cloned().unwrap_or_default())
+}
+
+#[tauri::command]
+async fn account_logout() {
+    let _ = account_call(reqwest::Method::POST, "/api/auth/logout", None).await;
+    keychain_delete(SESSION_ENTRY);
+}
+
+#[tauri::command]
+async fn submit_entry(entry: serde_json::Value) -> R<serde_json::Value> {
+    account_call(reqwest::Method::POST, "/api/submissions", Some(entry)).await
+}
+
+#[tauri::command]
+async fn my_submissions() -> R<serde_json::Value> {
+    account_call(reqwest::Method::GET, "/api/submissions/mine", None).await
+}
+
 /* ---------- settings ---------- */
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -387,6 +493,7 @@ pub fn purge_keys() {
     for a in AccountFile::new(dir.join("accounts.json")).load().unwrap_or_default() {
         keychain_delete(&a.id);
     }
+    keychain_delete(SESSION_ENTRY);
 }
 
 /* ---------- entry ---------- */
@@ -456,7 +563,14 @@ pub fn run() {
             set_port,
             set_api_key,
             connect_openrouter,
-            open_url
+            open_url,
+            account_status,
+            account_send_code,
+            account_github,
+            account_verify,
+            account_logout,
+            submit_entry,
+            my_submissions
         ])
         .run(tauri::generate_context!())
         .expect("error while running YangmaoSwitch");

@@ -1,4 +1,4 @@
-import { ReactNode, useCallback, useEffect, useMemo, useState } from "react";
+import { createContext, ReactNode, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import {
   AlertTriangle,
   BarChart3,
@@ -7,7 +7,9 @@ import {
   Copy,
   ExternalLink,
   Gift,
+  House,
   KeyRound,
+  MessageSquarePlus,
   LayoutGrid,
   X,
   Play,
@@ -20,12 +22,19 @@ import {
   Zap,
 } from "lucide-react";
 import TitleBar, { isMac } from "./TitleBar";
+import SubmitDialog, { SubmitPrefill } from "./Submit";
 import { api, Account, AccountUsage, Catalog, GatewayInfo, LimitUsage, ModelEntry, ModelSquare, SquareModel, Offer, Access, modelKey, quotaShort, priceText, ProviderModels, OVERAGE, Provider, quotaParts, quotaText, REQUIRES, UsageRow } from "./api";
 
-type Page = "catalog" | "models" | "accounts" | "usage" | "connect";
+type Page = "home" | "catalog" | "models" | "accounts" | "usage" | "connect";
+type ModelsPreset = { sort?: SortKey; access?: "all" | "free"; open?: string };
+type SortKey = "heat" | "new" | "platforms";
+
+/** Opens the submit / report dialog, optionally about a given platform or model. */
+const SubmitCtx = createContext<(p?: SubmitPrefill) => void>(() => {});
 type Notify = (ok: boolean, text: string) => void;
 
 const PAGES: { id: Page; label: string; icon: typeof Gift }[] = [
+  { id: "home", label: "首页", icon: House },
   { id: "models", label: "模型广场", icon: LayoutGrid },
   { id: "catalog", label: "Providers", icon: Server },
   { id: "accounts", label: "我的账号", icon: KeyRound },
@@ -35,7 +44,7 @@ const PAGES: { id: Page; label: string; icon: typeof Gift }[] = [
 
 const initialPage = (): Page => {
   const h = window.location.hash.slice(1) as Page;
-  return PAGES.some((p) => p.id === h) ? h : "models";
+  return PAGES.some((p) => p.id === h) ? h : "home";
 };
 
 export default function App() {
@@ -45,6 +54,8 @@ export default function App() {
   const [usage, setUsage] = useState<AccountUsage[]>([]);
   const [gw, setGw] = useState<GatewayInfo | null>(null);
   const [toast, setToast] = useState<{ ok: boolean; text: string } | null>(null);
+  const [submit, setSubmit] = useState<SubmitPrefill | null>(null);
+  const [preset, setPreset] = useState<ModelsPreset>({});
 
   const reload = useCallback(async () => setAccounts(await api.accounts()), []);
   const notify: Notify = useCallback((ok, text) => {
@@ -62,7 +73,8 @@ export default function App() {
     return () => window.clearInterval(t);
   }, [reload, notify]);
 
-  const go = (p: Page) => {
+  const go = (p: Page, mp: ModelsPreset = {}) => {
+    setPreset(mp);
     setPage(p);
     window.history.replaceState(null, "", `#${p}`);
   };
@@ -70,6 +82,7 @@ export default function App() {
   const today = usage.reduce((s, u) => s + u.today_requests, 0);
 
   return (
+    <SubmitCtx.Provider value={(p) => setSubmit(p ?? {})}>
     <div className={isMac ? "shell mac" : "shell"}>
       <aside className="sidebar">
         <div className="sidebar-drag" data-tauri-drag-region />
@@ -87,6 +100,10 @@ export default function App() {
             </button>
           ))}
         </nav>
+        <button className="nav-item submit-entry" onClick={() => setSubmit({})}>
+          <MessageSquarePlus size={17} strokeWidth={2} />
+          <span>提交 / 纠错</span>
+        </button>
         <GatewayCard gw={gw} notify={notify} />
       </aside>
 
@@ -111,7 +128,8 @@ export default function App() {
             }}
           />
         )}
-        {page === "models" && <ModelsPage catalog={catalog} accounts={accounts} notify={notify} onOpenProvider={() => go("catalog")} />}
+        {page === "home" && <HomePage catalog={catalog} notify={notify} onModels={(mp) => go("models", mp)} />}
+        {page === "models" && <ModelsPage key={JSON.stringify(preset)} preset={preset} catalog={catalog} accounts={accounts} notify={notify} onOpenProvider={() => go("catalog")} />}
         {page === "accounts" && <AccountsPage accounts={accounts} usage={usage} onChange={reload} notify={notify} onBrowse={() => go("catalog")} />}
         {page === "usage" && <UsagePage usage={usage} />}
         {page === "connect" && <ConnectPage accounts={accounts} gw={gw} onGw={setGw} notify={notify} />}
@@ -123,7 +141,9 @@ export default function App() {
           {toast.text}
         </div>
       )}
+      {submit && <SubmitDialog prefill={submit} onClose={() => setSubmit(null)} notify={notify} />}
     </div>
+    </SubmitCtx.Provider>
   );
 }
 
@@ -373,6 +393,7 @@ function CatalogPage(props: { catalog: Catalog | null; accounts: Account[]; noti
 }
 
 function ProviderDetail({ p, onAdd }: { p: Provider; onAdd: () => void }) {
+  const openSubmit = useContext(SubmitCtx);
   return (
     <div className="detail">
       {p.overage === "auto_paid" && (
@@ -447,6 +468,9 @@ function ProviderDetail({ p, onAdd }: { p: Provider; onAdd: () => void }) {
             <Plus size={15} /> 粘贴 Key
           </button>
         )}
+        <button className="btn link" onClick={() => openSubmit({ kind: "correction", target: p.id, title: `${pname(p)}：` })}>
+          纠错
+        </button>
       </div>
     </div>
   );
@@ -582,12 +606,16 @@ function modelTags(m: SquareModel): { text: string; tone?: string }[] {
   if (m.input_modalities.includes("image")) t.push({ text: "视觉" });
   if (m.input_modalities.includes("video")) t.push({ text: "视频理解" });
   if (m.input_modalities.includes("audio")) t.push({ text: "音频" });
-  if (m.tools) t.push({ text: "Tools" });
+  if (m.tools) t.push({ text: "工具调用" });
   if (m.reasoning) t.push({ text: "推理模型" });
   const c = ctxText(m.context_length);
   if (c) t.push({ text: c });
   return t;
 }
+
+/** The quota that applies to an offer: free models use the model-specific limit, free-quota offers the general quota or credits. */
+const pickQuota = (p: Provider, access?: Access) =>
+  (access === "quota" ? p.quotas.find((q) => !q.models) : p.quotas.find((q) => !!q.models)) ?? p.quotas[0];
 
 const ACCESS: Record<Access, { text: string; tone: string }> = {
   free: { text: "免费模型", tone: "ok" },
@@ -596,15 +624,121 @@ const ACCESS: Record<Access, { text: string; tone: string }> = {
   account: { text: "你的账号可用", tone: "ok" },
 };
 
-function ModelsPage(props: { catalog: Catalog | null; accounts: Account[]; notify: Notify; onOpenProvider: () => void }) {
+const daysAgo = (d?: string | null) => (d ? Math.floor((Date.now() - new Date(d.slice(0, 10)).getTime()) / 864e5) : Infinity);
+
+function HomePage(props: { catalog: Catalog | null; notify: Notify; onModels: (p: ModelsPreset) => void }) {
+  const [data, setData] = useState<ModelSquare | null>(null);
+  useEffect(() => {
+    api.modelSquare().then(setData).catch((e) => props.notify(false, String(e)));
+  }, []);
+  const pName = (id: string) => {
+    const p = props.catalog?.providers.find((x) => x.id === id);
+    return p ? pname(p) : id;
+  };
+  if (!data) return <PageHead title="首页" sub="正在加载…" />;
+  const models = [...data.models].sort((a, b) => (b.heat ?? 0) - (a.heat ?? 0));
+  const hot = models.slice(0, 6);
+  const fresh = models.filter((m) => daysAgo(m.created) <= 45).sort((a, b) => (b.created ?? "").localeCompare(a.created ?? "")).slice(0, 6);
+  const forever = models.filter((m) => m.offers.some((o) => o.access === "free")).slice(0, 6);
+  // free / free-quota offers first seen after tracking started
+  const newFree = models
+    .flatMap((m) => m.offers.filter((o) => o.access !== "paid" && o.since && o.since !== data.baseline && daysAgo(o.since) <= 14).map((o) => ({ m, o })))
+    .sort((a, b) => (b.o.since ?? "").localeCompare(a.o.since ?? ""))
+    .slice(0, 8);
+  const card = (m: SquareModel) => (
+    <button key={m.id} className="mcard" onClick={() => props.onModels({ open: m.id })}>
+      <div className="mcard-head">
+        <Avatar name={m.vendor ?? m.name} seed={m.vendor ?? m.offers[0].provider} size={34} />
+        <div className="mcard-title">
+          <b>{m.vendor ? `${m.vendor} / ${m.name}` : m.name}</b>
+          <span>
+            {m.offers.length > 2 ? `${m.offers.slice(0, 2).map((o) => pName(o.provider)).join("、")} 等 ${m.offers.length} 个平台` : m.offers.map((o) => pName(o.provider)).join("、")}
+          </span>
+        </div>
+      </div>
+      <div className="mtags">
+        <span className={`mtag ${ACCESS[m.offers[0].access ?? "free"].tone}`}>{ACCESS[m.offers[0].access ?? "free"].text}</span>
+        {modelTags(m)
+          .filter((t) => t.text !== "对话")
+          .map((t, i) => (
+            <span key={i} className="mtag">
+              {t.text}
+            </span>
+          ))}
+      </div>
+    </button>
+  );
+  const section = (title: string, sub: string, more: () => void, body: ReactNode) => (
+    <section className="home-sec">
+      <div className="sec-head">
+        <div>
+          <h2>{title}</h2>
+          <p>{sub}</p>
+        </div>
+        <button className="btn link" onClick={more}>
+          查看全部
+        </button>
+      </div>
+      {body}
+    </section>
+  );
+  return (
+    <>
+      <PageHead
+        title="首页"
+        sub={
+          <>
+            <b className="num">{models.length}</b> 个可以免费调用的模型 · 更新于 {data.generated_at.slice(0, 10)}
+          </>
+        }
+      />
+      {section("热门模型", "按 OpenRouter 每日用量和提供平台数排序", () => props.onModels({ sort: "heat" }), <div className="model-grid">{hot.map(card)}</div>)}
+      {section(
+        "新上免费用量",
+        "最近 14 天新出现的免费模型或免费额度",
+        () => props.onModels({ sort: "new" }),
+        newFree.length ? (
+          <ul className="newfree">
+            {newFree.map(({ m, o }) => (
+              <li key={`${m.id}|${o.provider}`}>
+                <button onClick={() => props.onModels({ open: m.id })}>
+                  <Avatar name={pName(o.provider)} seed={o.provider} size={26} />
+                  <b>{m.name}</b>
+                  <span className="muted">{pName(o.provider)}</span>
+                  <span className={`mtag ${ACCESS[o.access ?? "free"].tone}`}>{ACCESS[o.access ?? "free"].text}</span>
+                  <span className="muted small num">{o.since}</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="muted small">从 {data.baseline ?? data.generated_at.slice(0, 10)} 开始记录，之后新上的免费模型和免费额度会显示在这里。</p>
+        ),
+      )}
+      {fresh.length > 0 && section("新模型", "最近 45 天上线、可以免费调用的模型", () => props.onModels({ sort: "new" }), <div className="model-grid">{fresh.map(card)}</div>)}
+      {section("不限期免费", "平台列为免费模型、不消耗额度（通常有限速），以平台公布为准", () => props.onModels({ access: "free" }), <div className="model-grid">{forever.map(card)}</div>)}
+    </>
+  );
+}
+
+function ModelsPage(props: { preset: ModelsPreset; catalog: Catalog | null; accounts: Account[]; notify: Notify; onOpenProvider: () => void }) {
+  const openSubmit = useContext(SubmitCtx);
   const [data, setData] = useState<ModelSquare | null>(null);
   const [q, setQ] = useState("");
   const [kind, setKind] = useState<"all" | "vision" | "tools" | "reasoning">("all");
+  const [access, setAccess] = useState<"all" | "free">(props.preset.access ?? "all");
+  const [sort, setSort] = useState<SortKey>(props.preset.sort ?? "heat");
   const [provider, setProvider] = useState("all");
   const [open, setOpen] = useState<SquareModel | null>(null);
   const [mine, setMine] = useState<ModelEntry[]>([]);
   useEffect(() => {
-    api.modelSquare().then(setData).catch((e) => props.notify(false, String(e)));
+    api
+      .modelSquare()
+      .then((d) => {
+        setData(d);
+        if (props.preset.open) setOpen(d.models.find((m) => m.id === props.preset.open) ?? null);
+      })
+      .catch((e) => props.notify(false, String(e)));
   }, []);
   useEffect(() => {
     api.models().then(setMine).catch(() => setMine([]));
@@ -635,10 +769,15 @@ function ModelsPage(props: { catalog: Catalog | null; accounts: Account[]; notif
   const text = q.trim().toLowerCase();
   const list = models.filter(
     (m) =>
+      (access === "all" || m.offers.some((o) => o.access === "free")) &&
       (provider === "all" || m.offers.some((o) => o.provider === provider)) &&
       (kind === "all" || (kind === "vision" && m.input_modalities.includes("image")) || (kind === "tools" && m.tools) || (kind === "reasoning" && m.reasoning)) &&
       (!text || `${m.name} ${m.vendor ?? ""} ${m.id} ${m.description}`.toLowerCase().includes(text)),
   );
+  // default order is the server's popularity ranking
+  if (sort === "new") list.sort((a, b) => (b.created ?? "").localeCompare(a.created ?? ""));
+  else if (sort === "platforms") list.sort((a, b) => b.offers.length - a.offers.length || (b.heat ?? 0) - (a.heat ?? 0));
+  else list.sort((a, b) => (b.heat ?? 0) - (a.heat ?? 0));
 
   return (
     <>
@@ -672,10 +811,14 @@ function ModelsPage(props: { catalog: Catalog | null; accounts: Account[]; notif
           options={[
             ["all", "全部"],
             ["vision", "视觉"],
-            ["tools", "Tools"],
+            ["tools", "工具调用"],
             ["reasoning", "推理"],
           ]}
         />
+        <select className="select" value={access} onChange={(e) => setAccess(e.target.value as "all" | "free")} aria-label="调用方式">
+          <option value="all">全部方式</option>
+          <option value="free">只看免费模型</option>
+        </select>
         <select className="select" value={provider} onChange={(e) => setProvider(e.target.value)} aria-label="平台">
           <option value="all">全部平台</option>
           {providers.map((p) => (
@@ -683,6 +826,11 @@ function ModelsPage(props: { catalog: Catalog | null; accounts: Account[]; notif
               {pName(p)}
             </option>
           ))}
+        </select>
+        <select className="select" value={sort} onChange={(e) => setSort(e.target.value as SortKey)} aria-label="排序">
+          <option value="heat">按热度</option>
+          <option value="new">最新上线</option>
+          <option value="platforms">平台最多</option>
         </select>
       </div>
 
@@ -727,6 +875,9 @@ function ModelsPage(props: { catalog: Catalog | null; accounts: Account[]; notif
                 <h3>{open.name}</h3>
                 <p>{open.vendor ?? pName(open.offers[0].provider)}</p>
               </div>
+              <button className="btn link" onClick={() => openSubmit({ kind: "correction", target: open.id, title: `${open.name}：` })}>
+                纠错
+              </button>
               <IconBtn label="关闭" onClick={() => setOpen(null)}>
                 <X size={18} />
               </IconBtn>
@@ -775,7 +926,7 @@ function ModelsPage(props: { catalog: Catalog | null; accounts: Account[]; notif
               {open.offers.map((o) => {
                 const p = props.catalog?.providers.find((x) => x.id === o.provider);
                 const acc = ACCESS[o.access ?? "free"];
-                const q = o.access !== "paid" && p?.quotas[0] ? quotaShort(p.quotas[0]) : null;
+                const q = o.access !== "paid" && p?.quotas.length ? quotaShort(pickQuota(p, o.access)) : null;
                 return (
                 <div className="offer" key={o.provider}>
                   <Avatar name={pName(o.provider)} seed={o.provider} size={30} />
