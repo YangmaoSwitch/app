@@ -108,6 +108,8 @@ export interface SquareModel {
   /** popularity score: OpenRouter daily tokens, number of free platforms, recency */
   heat?: number;
   openrouter_tokens_day?: number | null;
+  /** open-weight downloads on ModelScope */
+  downloads?: number | null;
 }
 
 /** free = free model, quota = counted against the platform's free quota/credits, paid = paid only,
@@ -127,6 +129,9 @@ export interface Offer {
   since?: string;
 }
 export interface ProviderModels {
+  /** ranking score (see the catalog build) */
+  score?: number;
+  verified?: boolean;
   total: number;
   free: number;
   quota: number;

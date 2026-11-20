@@ -236,12 +236,7 @@ function CatalogPage(props: { catalog: Catalog | null; accounts: Account[]; noti
   useEffect(() => {
     api.modelSquare().then(setSquare).catch(() => setSquare(null));
   }, []);
-  const heat = useMemo(() => {
-    const h = new Map<string, number>();
-    for (const m of square?.models ?? []) for (const o of m.offers) if (o.access !== "paid") h.set(o.provider, (h.get(o.provider) ?? 0) + (m.heat ?? 0));
-    return h;
-  }, [square]);
-  const ranked = [...list].sort((a, b) => (heat.get(b.id) ?? 0) - (heat.get(a.id) ?? 0) || a.name.localeCompare(b.name));
+  const ranked = [...list].sort(byProviderRank(square));
   const groups: [string, Provider[]][] = [
     ["国内供应商", ranked.filter((p) => p.region === "cn")],
     ["海外供应商", ranked.filter((p) => p.region === "global")],
@@ -624,6 +619,13 @@ const ACCESS: Record<Access, { text: string; tone: string }> = {
   account: { text: "你的账号可用", tone: "ok" },
 };
 
+/** Catalog ranking of providers: score from the server (free models x3, renewing free quota x1, one-time gift x0.3),
+ *  unverified entries last. */
+const byProviderRank = (sq: ModelSquare | null) => (a: Provider, b: Provider) =>
+  Number(a.status !== "verified") - Number(b.status !== "verified") ||
+  (sq?.providers?.[b.id]?.score ?? 0) - (sq?.providers?.[a.id]?.score ?? 0) ||
+  a.name.localeCompare(b.name);
+
 const daysAgo = (d?: string | null) => (d ? Math.floor((Date.now() - new Date(d.slice(0, 10)).getTime()) / 864e5) : Infinity);
 
 function HomePage(props: { catalog: Catalog | null; notify: Notify; onModels: (p: ModelsPreset) => void; onProviders: () => void }) {
@@ -645,7 +647,7 @@ function HomePage(props: { catalog: Catalog | null; notify: Notify; onModels: (p
   // popular providers: weight of the popular models they serve for free or on a free quota
   const score = new Map<string, number>();
   for (const m of models) for (const o of m.offers) if (o.access !== "paid" && provider(o.provider)) score.set(o.provider, (score.get(o.provider) ?? 0) + (m.heat ?? 0));
-  const topProviders = [...score.entries()].sort((a, b) => b[1] - a[1]).slice(0, ROW).map(([id]) => id);
+  const topProviders = (props.catalog?.providers ?? []).filter((p) => score.has(p.id)).sort(byProviderRank(data)).slice(0, ROW).map((p) => p.id);
 
   const card = (m: SquareModel) => (
     <button key={m.id} className="mcard" onClick={() => props.onModels({ open: m.id })}>
