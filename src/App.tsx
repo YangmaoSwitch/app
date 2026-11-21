@@ -231,7 +231,7 @@ function CatalogPage(props: { catalog: Catalog | null; accounts: Account[]; noti
     [base, region, text],
   );
 
-  // rank by the popularity of the models each provider serves for free or on a free quota
+  // rank by the catalog score: quality of the models each provider serves free, weighted by how lasting the access is
   const [square, setSquare] = useState<ModelSquare | null>(null);
   useEffect(() => {
     api.modelSquare().then(setSquare).catch(() => setSquare(null));
@@ -644,7 +644,7 @@ function HomePage(props: { catalog: Catalog | null; notify: Notify; onModels: (p
   const hot = models.slice(0, ROW);
   const fresh = models.filter((m) => daysAgo(m.created) <= 45).sort((a, b) => (b.created ?? "").localeCompare(a.created ?? "")).slice(0, ROW);
   const forever = models.filter((m) => m.offers.some((o) => o.access === "free")).slice(0, ROW);
-  // popular providers: weight of the popular models they serve for free or on a free quota
+  // recommended providers: those serving models for free or on a free quota, in the catalog's order
   const score = new Map<string, number>();
   for (const m of models) for (const o of m.offers) if (o.access !== "paid" && provider(o.provider)) score.set(o.provider, (score.get(o.provider) ?? 0) + (m.heat ?? 0));
   const topProviders = (props.catalog?.providers ?? []).filter((p) => score.has(p.id)).sort(byProviderRank(data)).slice(0, ROW).map((p) => p.id);
@@ -712,8 +712,8 @@ function HomePage(props: { catalog: Catalog | null; notify: Notify; onModels: (p
           </>
         }
       />
-      {section("热门免费模型", "按 OpenRouter 每日用量和提供它的供应商数排序", () => props.onModels({ sort: "heat" }), hot.map(card))}
-      {section("热门供应商", "按提供的热门免费模型排序", props.onProviders, topProviders.map(pcard))}
+      {section("免费好模型", "先看能否长期免费用，再看下载量、供应商数和发布时间", () => props.onModels({ sort: "heat" }), hot.map(card))}
+      {section("推荐供应商", "按免费提供的模型排序，长期免费的权重最高", props.onProviders, topProviders.map(pcard))}
       {fresh.length > 0 && section("新模型", "最近 45 天上线、可以免费调用的模型", () => props.onModels({ sort: "new" }), fresh.map(card))}
       {section("不限期免费", "供应商列为免费模型、不消耗额度（通常有限速），以供应商公布为准", () => props.onModels({ access: "free" }), forever.map(card))}
     </>
@@ -773,7 +773,7 @@ function ModelsPage(props: { preset: ModelsPreset; catalog: Catalog | null; acco
       (kind === "all" || (kind === "vision" && m.input_modalities.includes("image")) || (kind === "tools" && m.tools) || (kind === "reasoning" && m.reasoning)) &&
       (!text || `${m.name} ${m.vendor ?? ""} ${m.id} ${m.description}`.toLowerCase().includes(text)),
   );
-  // default order is the server's popularity ranking
+  // default order is the catalog ranking: quality x how freely the model can be used
   if (sort === "new") list.sort((a, b) => (b.created ?? "").localeCompare(a.created ?? ""));
   else if (sort === "platforms") list.sort((a, b) => b.offers.length - a.offers.length || (b.heat ?? 0) - (a.heat ?? 0));
   else list.sort((a, b) => (b.heat ?? 0) - (a.heat ?? 0));
@@ -827,7 +827,7 @@ function ModelsPage(props: { preset: ModelsPreset; catalog: Catalog | null; acco
           ))}
         </select>
         <select className="select" value={sort} onChange={(e) => setSort(e.target.value as SortKey)} aria-label="排序">
-          <option value="heat">按热度</option>
+          <option value="heat">推荐</option>
           <option value="new">最新上线</option>
           <option value="platforms">供应商最多</option>
         </select>
