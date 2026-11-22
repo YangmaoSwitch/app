@@ -6,6 +6,9 @@ const PROVIDER_LOGOS: Record<string, string> = {
   cohere: "cohere-color", "google-ai-studio": "aistudio", groq: "groq", modelscope: "modelscope-color", "nvidia-nim": "nvidia-color",
   opencode: "opencode", openrouter: "openrouter", siliconflow: "siliconcloud-color", "tencent-hunyuan": "hunyuan-color",
   "volcengine-ark": "volcengine-color", "zhipu-bigmodel": "zhipu-color", qiniu: "qiniu-color",
+  "kilo-code": "kilocode", "ovhcloud-ai-endpoints": "ovh", "mistral": "mistral-color", "cerebras": "cerebras-color",
+  "vercel-ai-gateway": "vercel", "aion-labs": "aionlabs", "z-ai": "zai", "tencent-tokenhub": "tencentcloud-color",
+  "sensenova": "sensenova-color", "moark": "giteeai", "xfyun-spark": "spark-color",
 };
 const MODEL_LOGOS: [RegExp, string][] = [
   [/qwen|qwq|qvq|tongyi/, "qwen-color"], [/deepseek/, "deepseek-color"], [/\bglm|zhipu|z\.ai|zai-org|chatglm|cogview/, "zhipu-color"],
