@@ -617,8 +617,8 @@ const pickQuota = (p: Provider, access?: Access) =>
   (access === "quota" ? p.quotas.find((q) => !q.models) : p.quotas.find((q) => !!q.models)) ?? p.quotas[0];
 
 const ACCESS: Record<Access, { text: string; tone: string }> = {
-  free: { text: "免费模型", tone: "ok" },
-  quota: { text: "用免费额度", tone: "blue" },
+  free: { text: "免费", tone: "ok" },
+  quota: { text: "免费", tone: "ok" },
   paid: { text: "付费", tone: "" },
   account: { text: "你的账号可用", tone: "ok" },
 };
@@ -773,7 +773,7 @@ function ModelsPage(props: { preset: ModelsPreset; catalog: Catalog | null; acco
   const text = q.trim().toLowerCase();
   const list = models.filter(
     (m) =>
-      (access === "all" || m.offers.some((o) => o.access === "free")) &&
+      (access === "all" || m.offers.some((o) => o.access !== "paid")) &&
       (provider === "all" || m.offers.some((o) => o.provider === provider)) &&
       (kind === "all" || (kind === "vision" && m.input_modalities.includes("image")) || (kind === "tools" && m.tools) || (kind === "reasoning" && m.reasoning)) &&
       (!text || `${m.name} ${m.vendor ?? ""} ${m.id} ${m.description}`.toLowerCase().includes(text)),
@@ -821,7 +821,7 @@ function ModelsPage(props: { preset: ModelsPreset; catalog: Catalog | null; acco
         />
         <select className="select" value={access} onChange={(e) => setAccess(e.target.value as "all" | "free")} aria-label="调用方式">
           <option value="all">全部方式</option>
-          <option value="free">只看免费模型</option>
+          <option value="free">只看免费</option>
         </select>
         <select className="select" value={provider} onChange={(e) => setProvider(e.target.value)} aria-label="供应商">
           <option value="all">全部供应商</option>
