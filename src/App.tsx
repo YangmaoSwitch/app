@@ -713,7 +713,8 @@ function HomePage(props: { catalog: Catalog | null; notify: Notify; onModels: (p
         title="首页"
         sub={
           <>
-            <b className="num">{models.length}</b> 个可以免费调用的模型 · 更新于 {data.generated_at.slice(0, 10)}
+            agent 实时检查国内外最新的免费 Token · <b className="num">{models.length}</b> 个可以免费调用的模型 · 更新于{" "}
+            {data.generated_at.slice(0, 10)}
           </>
         }
       />
