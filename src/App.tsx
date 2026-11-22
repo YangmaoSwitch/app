@@ -316,7 +316,11 @@ function CatalogPage(props: { catalog: Catalog | null; accounts: Account[]; noti
                         <div className="name">
                           {pname(p)}
                           {added.has(p.id) && <span className="chip ok">已添加</span>}
-                          {p.status !== "verified" && <span className="chip warn">待核实</span>}
+                          {p.ended ? (
+                            <span className="chip" title={`免费活动已于 ${p.ended} 下线`}>已下线</span>
+                          ) : (
+                            p.status !== "verified" && <span className="chip warn">待核实</span>
+                          )}
                         </div>
                         <div className="desc">{p.summary ?? p.homepage}</div>
                       </div>
@@ -396,6 +400,7 @@ function ProviderDetail({ p, onAdd }: { p: Provider; onAdd: () => void }) {
           <AlertTriangle size={16} /> 免费额度用完后会自动转为付费。添加前先在供应商控制台开启“用完即停”之类的保护。
         </div>
       )}
+      {p.ended && <p className="muted">这个免费活动已于 {p.ended} 下线，条目保留供参考。</p>}
       <dl className="kv">
         <dt>免费额度</dt>
         <dd>

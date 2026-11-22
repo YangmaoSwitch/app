@@ -17,6 +17,7 @@ export interface Quota {
   models?: string;
   condition?: string;
   expires_days?: number;
+  ended?: string;
   note?: string;
   evidence: string;
 }
@@ -30,6 +31,8 @@ export interface Provider {
   api_usable: boolean;
   status: string;
   last_verified: string;
+  ends?: string | null;
+  ended?: string | null;
   summary?: string;
   api?: { protocol: string[]; base_url: string; free_models?: string[]; free_model_rule?: string; models?: string[]; models_url?: string; models_access?: "free" | "quota" };
   signup: { url: string; requires: string[]; regions_blocked?: string[]; notes?: string };
@@ -294,5 +297,6 @@ export function quotaText(q: Quota): string {
   if (q.condition) parts.push(q.condition);
   if (q.reset && q.reset !== "rolling") parts.push(`${q.reset} 重置`);
   if (q.expires_days) parts.push(`${q.expires_days} 天有效`);
+  if (q.ended) parts.push(`已于 ${q.ended} 下线`);
   return parts.join(" · ");
 }
