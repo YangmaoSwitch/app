@@ -9,6 +9,8 @@ const PROVIDER_LOGOS: Record<string, string> = {
   "kilo-code": "kilocode", "ovhcloud-ai-endpoints": "ovh", "mistral": "mistral-color", "cerebras": "cerebras-color",
   "vercel-ai-gateway": "vercel", "aion-labs": "aionlabs", "z-ai": "zai", "tencent-tokenhub": "tencentcloud-color",
   "sensenova": "sensenova-color", "moark": "giteeai", "xfyun-spark": "spark-color",
+  "fireworks": "fireworks-color", "hyperbolic": "hyperbolic-color", "novita": "novita-color", "nous-portal": "nousresearch",
+  "pollinations": "pollinations", "inception-labs": "inception",
 };
 const MODEL_LOGOS: [RegExp, string][] = [
   [/qwen|qwq|qvq|tongyi/, "qwen-color"], [/deepseek/, "deepseek-color"], [/\bglm|zhipu|z\.ai|zai-org|chatglm|cogview/, "zhipu-color"],
