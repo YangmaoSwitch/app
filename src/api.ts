@@ -18,6 +18,7 @@ export interface Quota {
   condition?: string;
   expires_days?: number;
   ended?: string;
+  new_users?: boolean;
   note?: string;
   evidence: string;
 }
@@ -287,6 +288,25 @@ export function quotaShort(q: Quota): string {
   return `${period} ${n} ${unit}`;
 }
 
+/** Offers only for new users: flagged in the data, or conditions like "注册 14 天内". */
+export function isNewUser(q: Quota): boolean {
+  return !!q.new_users || /注册.{0,8}(天|日|月)内|新用户|新注册|新账号|首次注册|新人/.test(q.condition ?? "");
+}
+
+/** What happens when the free allowance runs out, and whether it comes back. */
+export function overageText(p: Provider): string {
+  const base = OVERAGE[p.overage] ?? p.overage;
+  const live = (p.quotas ?? []).filter((q) => !q.ended);
+  const order = ["hour", "day", "week", "month"];
+  const lasting = live.filter((q) => order.includes(q.period) && !isNewUser(q)).map((q) => q.period);
+  if (lasting.length) {
+    const r = lasting.sort((a, b) => order.indexOf(a) - order.indexOf(b))[0];
+    return `${base}，${{ hour: "每小时", day: "每日", week: "每周", month: "每月" }[r]}刷新`;
+  }
+  if (live.length && live.some((q) => q.period === "one-time" || isNewUser(q))) return `${base}，不再补充`;
+  return base;
+}
+
 export function quotaText(q: Quota): string {
   const period = PERIOD[q.period] ?? q.period;
   const unit = UNIT[q.unit] ?? q.unit;
@@ -298,5 +318,6 @@ export function quotaText(q: Quota): string {
   if (q.reset && q.reset !== "rolling") parts.push(`${q.reset} 重置`);
   if (q.expires_days) parts.push(`${q.expires_days} 天有效`);
   if (q.ended) parts.push(`已于 ${q.ended} 下线`);
+  if (isNewUser(q)) parts.unshift("新用户活动");
   return parts.join(" · ");
 }

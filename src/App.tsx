@@ -24,7 +24,7 @@ import {
 import TitleBar, { isMac } from "./TitleBar";
 import SubmitDialog, { SubmitPrefill } from "./Submit";
 import { ModelLogo, ProviderLogo } from "./logos";
-import { api, Account, AccountUsage, Catalog, GatewayInfo, LimitUsage, ModelEntry, ModelSquare, SquareModel, Offer, Access, modelKey, quotaShort, priceText, ProviderModels, OVERAGE, Provider, quotaParts, quotaText, REQUIRES, UsageRow } from "./api";
+import { api, Account, AccountUsage, Catalog, GatewayInfo, LimitUsage, ModelEntry, ModelSquare, SquareModel, Offer, Access, modelKey, quotaShort, priceText, ProviderModels, overageText, Provider, quotaParts, quotaText, REQUIRES, UsageRow } from "./api";
 
 type Page = "home" | "catalog" | "models" | "accounts" | "usage" | "connect";
 type ModelsPreset = { sort?: SortKey; access?: "all" | "free"; open?: string };
@@ -426,7 +426,7 @@ function ProviderDetail({ p, onAdd }: { p: Provider; onAdd: () => void }) {
           </>
         )}
         <dt>额度用完后</dt>
-        <dd className={p.overage === "auto_paid" ? "danger-text" : ""}>{OVERAGE[p.overage]}</dd>
+        <dd className={p.overage === "auto_paid" ? "danger-text" : ""}>{overageText(p)}</dd>
         {p.api && (
           <>
             <dt>接口地址</dt>
@@ -479,18 +479,18 @@ function ProviderDetail({ p, onAdd }: { p: Provider; onAdd: () => void }) {
 /** The platform's model list maintained on the server: free / covered by the free quota / paid, with list prices. */
 function ProviderModelList({ pid }: { pid: string }) {
   const [pm, setPm] = useState<ProviderModels | null | undefined>(undefined);
-  const [tab, setTab] = useState<"free" | "quota" | "paid">("free");
+  const [tab, setTab] = useState<"usable" | "paid">("usable");
   const [all, setAll] = useState(false);
   useEffect(() => {
     api.modelSquare().then((d) => {
       const x = d.providers?.[pid] ?? null;
       setPm(x);
-      if (x) setTab(x.free ? "free" : x.quota ? "quota" : "paid");
+      if (x) setTab(x.free + x.quota ? "usable" : "paid");
     }).catch(() => setPm(null));
   }, [pid]);
   if (pm === undefined) return <span className="muted">正在加载…</span>;
   if (!pm || pm.total === 0) return <span className="muted">暂无模型列表，欢迎提交。</span>;
-  const rows = pm.models.filter((m) => m.access === tab);
+  const rows = pm.models.filter((m) => (tab === "paid" ? m.access === "paid" : m.access !== "paid"));
   const shown = all ? rows : rows.slice(0, 12);
   return (
     <div className="pmodels">
@@ -502,9 +502,8 @@ function ProviderModelList({ pid }: { pid: string }) {
           setAll(false);
         }}
         options={[
-          ["free", "免费", pm.free],
-          ["quota", "用免费额度", pm.quota],
-          ["paid", "付费", pm.paid],
+          ["usable", "可免费用", pm.free + pm.quota],
+          ["paid", "纯收费", pm.paid],
         ]}
       />
       {rows.length === 0 ? (
@@ -524,7 +523,7 @@ function ProviderModelList({ pid }: { pid: string }) {
           展开全部 {rows.length} 个
         </a>
       )}
-      {tab !== "free" && rows.some((m) => m.price) && <span className="muted small">价格为每百万输入 / 输出 tokens 的美元标价，仅供参考。</span>}
+      {rows.some((m) => m.price && (m.price.input || m.price.output)) && <span className="muted small">价格为每百万输入 / 输出 tokens 的美元标价，仅供参考。</span>}
     </div>
   );
 }
@@ -686,7 +685,7 @@ function HomePage(props: { catalog: Catalog | null; notify: Notify; onModels: (p
           <ProviderLogo id={id} size={34} />
           <div className="mcard-title">
             <b>{pname(p)}</b>
-            <span>{pm ? `模型 ${pm.total} 个（免费 ${pm.free} · 用免费额度 ${pm.quota}）` : ""}</span>
+            <span>{pm ? `模型 ${pm.total} 个（可免费用 ${pm.free + pm.quota} · 纯收费 ${pm.paid}）` : ""}</span>
           </div>
         </div>
         <p className="mcard-desc">{p.quotas[0] ? quotaText(p.quotas[0]) : ""}</p>
