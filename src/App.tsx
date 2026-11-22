@@ -502,8 +502,8 @@ function ProviderModelList({ pid }: { pid: string }) {
           setAll(false);
         }}
         options={[
-          ["usable", "可免费用", pm.free + pm.quota],
-          ["paid", "纯收费", pm.paid],
+          ["usable", "免费", pm.free + pm.quota],
+          ["paid", "付费", pm.paid],
         ]}
       />
       {rows.length === 0 ? (
@@ -685,7 +685,7 @@ function HomePage(props: { catalog: Catalog | null; notify: Notify; onModels: (p
           <ProviderLogo id={id} size={34} />
           <div className="mcard-title">
             <b>{pname(p)}</b>
-            <span>{pm ? `模型 ${pm.total} 个（可免费用 ${pm.free + pm.quota} · 纯收费 ${pm.paid}）` : ""}</span>
+            <span>{pm ? `模型 ${pm.total} 个（免费 ${pm.free + pm.quota} · 付费 ${pm.paid}）` : ""}</span>
           </div>
         </div>
         <p className="mcard-desc">{p.quotas[0] ? quotaText(p.quotas[0]) : ""}</p>
