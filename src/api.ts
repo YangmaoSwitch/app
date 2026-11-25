@@ -223,6 +223,7 @@ export const api = {
   setPort: (port: number) => invoke<GatewayInfo>("set_port", { port }),
   setApiKey: (key: string | null) => invoke<GatewayInfo>("set_api_key", { key }),
   models: () => invoke<ModelEntry[]>("list_models"),
+  routedModels: () => invoke<ModelEntry[]>("routed_models"),
   refreshModels: (id: string) => invoke<number>("refresh_models", { id }),
   moveAccount: (id: string, delta: number) => invoke<void>("move_account", { id, delta }),
   connectOpenRouter: () => invoke<Account>("connect_openrouter"),

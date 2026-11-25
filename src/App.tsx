@@ -1318,11 +1318,13 @@ function CopyRow({ label, value, hint, notify, mono = true, children }: { label:
 function ConnectPage(props: { accounts: Account[]; gw: GatewayInfo | null; onGw: (g: GatewayInfo) => void; notify: Notify }) {
   const gw = props.gw;
   const [models, setModels] = useState<ModelEntry[]>([]);
+  const [routed, setRouted] = useState<ModelEntry[]>([]);
   const [port, setPort] = useState("");
   const [editKey, setEditKey] = useState<string | null>(null);
   const [tool, setTool] = useState<"openai" | "claude">("openai");
   useEffect(() => {
     api.models().then(setModels);
+    api.routedModels().then(setRouted);
   }, [props.accounts]);
   useEffect(() => {
     if (gw) setPort(String(gw.port));
@@ -1330,7 +1332,7 @@ function ConnectPage(props: { accounts: Account[]; gw: GatewayInfo | null; onGw:
   if (!gw) return null;
 
   const root = gw.base_url ?? `http://127.0.0.1:${gw.port}`;
-  const model = models[0]?.id ?? "供应商上的模型名";
+  const model = "auto";
   const envPs = `$env:ANTHROPIC_BASE_URL="${root}"\n$env:ANTHROPIC_AUTH_TOKEN="${gw.api_key}"\n$env:ANTHROPIC_MODEL="${model}"\n$env:ANTHROPIC_DEFAULT_HAIKU_MODEL="${model}"\nclaude`;
   const envSh = `export ANTHROPIC_BASE_URL=${root}\nexport ANTHROPIC_AUTH_TOKEN=${gw.api_key}\nexport ANTHROPIC_MODEL=${model}\nexport ANTHROPIC_DEFAULT_HAIKU_MODEL=${model}\nclaude`;
 
@@ -1434,7 +1436,7 @@ function ConnectPage(props: { accounts: Account[]; gw: GatewayInfo | null; onGw:
             <>
               <CopyRow label="Base URL" value={`${root}/v1`} hint="Cherry Studio、Cline、OpenAI SDK 等" notify={props.notify} />
               <CopyRow label="API Key" value={gw.api_key} notify={props.notify} />
-              <CopyRow label="模型名" value={model} hint="直接用供应商上的模型名，见下方列表" notify={props.notify} />
+              <CopyRow label="模型名" value={model} hint="auto 由羊毛switch 自动选模型；也可以填下方列表里的具体模型" notify={props.notify} />
             </>
           ) : (
             <>
@@ -1458,10 +1460,40 @@ function ConnectPage(props: { accounts: Account[]; gw: GatewayInfo | null; onGw:
 
         <section className="panel">
           <h3>
-            可用模型 <span className="muted num">{models.length}</span>
+            自动选择（auto） <span className="muted num">{routed.length}</span>
           </h3>
           <p className="muted small">
-            多个账号都有同一个模型时，按“我的账号”里的顺序使用，前一个到上限或被供应商限流就自动换下一个。想固定用某个账号，模型名写成 <code>账号/模型名</code>。
+            模型名填 <code>auto</code> 时，按下面的顺序选用你的账号能用的免费模型（质量高的在前），并跳过不支持本次请求所需功能（工具调用、图片）的模型。某家到了上限、被限流、Key 失效或暂时出错，就自动换下一家。实际使用的账号和模型写在响应头 <code>x-yangmao-served-by</code>，也可以在“用量”里看。填这里的模型名（如 DeepSeek V4.1 Flash）则只用这个模型，但会在有它的各家之间自动切换。
+          </p>
+          {routed.length === 0 ? (
+            <div className="empty small-empty">还没有可自动选用的免费模型。先在“我的账号”添加 Key，再点“测试连接”。</div>
+          ) : (
+            <ol className="model-list routed">
+              {routed.map((m) => (
+                <li key={m.id}>
+                  <button
+                    className="model"
+                    title="点击复制模型名"
+                    onClick={async () => {
+                      await navigator.clipboard.writeText(m.id);
+                      props.notify(true, `已复制 ${m.id}`);
+                    }}
+                  >
+                    <span>{m.id}</span>
+                    <span className="muted small">{m.accounts.join("、")}</span>
+                  </button>
+                </li>
+              ))}
+            </ol>
+          )}
+        </section>
+
+        <section className="panel">
+          <h3>
+            各平台原始模型名 <span className="muted num">{models.length}</span>
+          </h3>
+          <p className="muted small">
+            也可以直接用供应商自己的模型名。多个账号都有同一个模型时，按“我的账号”里的顺序使用，前一个到上限或被供应商限流就自动换下一个。想固定用某个账号，模型名写成 <code>账号/模型名</code>。
           </p>
           {models.length === 0 ? (
             <div className="empty small-empty">还没有可用模型。先添加账号，再在“我的账号”里点“测试连接”获取模型列表。</div>

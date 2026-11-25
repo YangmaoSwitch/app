@@ -297,6 +297,7 @@ async fn get_model_square(state: State<'_, AppState>, refresh: bool) -> R<serde_
         match got {
             Ok((text, v)) => {
                 std::fs::write(&cache, &text).map_err(s)?;
+                state.gateway.set_routes(ym_core::routing::parse(&v));
                 return Ok(v);
             }
             Err(e) if refresh => return Err(e),
@@ -387,6 +388,12 @@ async fn refresh_models(state: State<'_, AppState>, id: String) -> R<usize> {
 #[tauri::command]
 fn list_models(state: State<'_, AppState>) -> Vec<ModelEntry> {
     state.gateway.models()
+}
+
+/// Free models from the model square that the user's accounts can reach, best first (what `auto` walks through).
+#[tauri::command]
+fn routed_models(state: State<'_, AppState>) -> Vec<ModelEntry> {
+    state.gateway.routed_models()
 }
 
 #[tauri::command]
@@ -519,6 +526,10 @@ pub fn run() {
             let accounts = file.load().unwrap_or_default();
             let ledger = Arc::new(Ledger::open(&data_dir.join("usage.db"))?);
             let gateway = Gateway::new(accounts.clone(), settings.api_key.clone(), ledger, Arc::new(Keychain));
+            // Routes for `auto` and cross-provider model names: cached model square data, else the bundled snapshot.
+            let square = std::fs::read_to_string(data_dir.join("models.json")).ok().and_then(|t| serde_json::from_str::<serde_json::Value>(&t).ok());
+            let square = square.unwrap_or_else(|| serde_json::from_str(BUNDLED_MODELS).expect("bundled models"));
+            gateway.set_routes(ym_core::routing::parse(&square));
 
             let state = AppState {
                 data_dir,
@@ -557,6 +568,7 @@ pub fn run() {
             test_account,
             refresh_models,
             list_models,
+            routed_models,
             usage,
             recent_requests,
             gateway_info,

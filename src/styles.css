@@ -245,6 +245,10 @@ pre { margin: 0 0 10px; background: #18181b; color: #e4e4e7; padding: 14px 16px;
 .model { display: flex; flex-direction: column; align-items: flex-start; gap: 1px; padding: 8px 10px; border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--surface); text-align: left; min-width: 0; }
 .model:hover { border-color: var(--gold-line); background: var(--gold-soft); }
 .model .mono { font-size: 12.5px; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.model-list.routed { list-style: none; padding: 0; counter-reset: route; }
+.model-list.routed li { counter-increment: route; display: flex; align-items: center; gap: 8px; min-width: 0; }
+.model-list.routed li::before { content: counter(route); width: 18px; flex: none; text-align: right; font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.model-list.routed .model { flex: 1; width: 100%; }
 .btn.sm-inline { height: 26px; padding: 0 9px; font-size: 12.5px; margin-left: 8px; }
 .connect .notice { margin: 0; }
 

@@ -69,6 +69,8 @@ export async function mockInvoke(cmd: string, _args?: Record<string, unknown>): 
       return [];
     case "list_models":
       return accounts.filter((a) => a.enabled).flatMap((a) => a.models.map((m) => ({ id: m, accounts: [a.id] })));
+    case "routed_models":
+      return accounts.filter((a) => a.enabled).slice(0, 3).map((a, i) => ({ id: ["DeepSeek V4.1 Flash", "GLM 5.3 Flash", "Qwen3.8 27B"][i], accounts: [a.id] }));
     case "test_account":
       return "连接正常（HTTP 200）";
     default:

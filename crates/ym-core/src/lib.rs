@@ -6,6 +6,7 @@
 //! * [`accounts`] – the user's own accounts (keys live in the OS keychain, not here).
 //! * [`gateway`] – local OpenAI-compatible gateway that enforces the limits.
 //! * [`oauth`] – OAuth PKCE (loopback) helpers.
+//! * [`routing`] – model routes from the model square data (`auto` and cross-provider names).
 
 pub mod accounts;
 pub mod catalog;
@@ -13,3 +14,4 @@ pub mod gateway;
 pub mod ledger;
 pub mod limits;
 pub mod oauth;
+pub mod routing;
