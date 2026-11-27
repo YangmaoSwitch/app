@@ -173,8 +173,13 @@ pub fn derive(quotas: &[Quota], margin: f64) -> Vec<Limit> {
         if amount <= 0.0 {
             continue;
         }
+        // At least one request must stay usable, so for very small amounts (e.g. 1) the margin cannot apply;
+        // the label says so instead of pretending a safety margin exists.
         let cap = (amount * margin).floor().max(1.0);
-        let label = format!("{} {} / {}", amount, q.unit, q.period);
+        let mut label = format!("{} {} / {}", amount, q.unit, q.period);
+        if margin < 1.0 && cap >= amount {
+            label.push_str("（数量太小，按全额限量）");
+        }
         if let Some(existing) = out.iter_mut().find(|l| l.unit == unit && l.window == window) {
             if amount < existing.amount {
                 *existing = Limit { unit, cap, amount, window, label };
@@ -220,6 +225,16 @@ mod tests {
         let day = limits.iter().find(|l| matches!(l.window, Window::Calendar { .. })).unwrap();
         assert_eq!(day.amount, 50.0);
         assert_eq!(day.cap, 45.0);
+    }
+
+    #[test]
+    fn tiny_amount_is_labelled() {
+        let l = derive(&[q("requests", 1.0, "one-time", None)], 0.9);
+        assert_eq!(l[0].cap, 1.0);
+        assert!(l[0].label.contains("按全额"));
+        let l = derive(&[q("requests", 10.0, "day", None)], 0.9);
+        assert_eq!(l[0].cap, 9.0);
+        assert!(!l[0].label.contains("按全额"));
     }
 
     #[test]

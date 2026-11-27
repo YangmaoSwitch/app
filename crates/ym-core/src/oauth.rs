@@ -26,8 +26,17 @@ const DONE_PAGE: &str = "<!doctype html><meta charset=utf-8><title>YangmaoSwitch
 <body style=\"font-family:sans-serif;text-align:center;padding-top:20vh\">\
 <h2>授权完成，可以关闭此页面，回到羊毛switch。</h2><p>Authorized. You can close this tab.</p>";
 
-/// Wait for one `GET /callback?...` on the listener and return its query parameters.
-pub async fn wait_callback(listener: TcpListener, timeout: Duration) -> anyhow::Result<Vec<(String, String)>> {
+/// Random one-off callback path such as `/callback/Xy...`: other local processes cannot guess it,
+/// so they cannot hand the app a code or token of their own while it waits.
+pub fn callback_path() -> String {
+    let mut bytes = [0u8; 18];
+    rand::thread_rng().fill_bytes(&mut bytes);
+    format!("/callback/{}", URL_SAFE_NO_PAD.encode(bytes))
+}
+
+/// Wait for one `GET <path>?...` on the listener and return its query parameters.
+/// Requests to any other path get a 404 and are ignored.
+pub async fn wait_callback(listener: TcpListener, path: &str, timeout: Duration) -> anyhow::Result<Vec<(String, String)>> {
     let fut = async {
         loop {
             let (mut sock, _) = listener.accept().await?;
@@ -35,7 +44,7 @@ pub async fn wait_callback(listener: TcpListener, timeout: Duration) -> anyhow::
             let n = sock.read(&mut buf).await?;
             let head = String::from_utf8_lossy(&buf[..n]).to_string();
             let target = head.lines().next().and_then(|l| l.split_whitespace().nth(1)).unwrap_or("/").to_string();
-            if !target.starts_with("/callback") {
+            if target.split('?').next() != Some(path) {
                 let _ = sock.write_all(b"HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\nConnection: close\r\n\r\n").await;
                 continue;
             }
@@ -60,7 +69,8 @@ pub async fn openrouter_connect(open: impl FnOnce(String)) -> anyhow::Result<Str
     let listener = TcpListener::bind(("127.0.0.1", 0)).await?;
     let port = listener.local_addr()?.port();
     let p = pkce();
-    let callback = format!("http://127.0.0.1:{port}/callback");
+    let path = callback_path();
+    let callback = format!("http://127.0.0.1:{port}{path}");
     let mut auth = url::Url::parse("https://openrouter.ai/auth")?;
     auth.query_pairs_mut()
         .append_pair("callback_url", &callback)
@@ -71,7 +81,7 @@ pub async fn openrouter_connect(open: impl FnOnce(String)) -> anyhow::Result<Str
         .append_pair("limit", "0.01");
     open(auth.to_string());
 
-    let params = wait_callback(listener, Duration::from_secs(600)).await?;
+    let params = wait_callback(listener, &path, Duration::from_secs(600)).await?;
     let code = params.iter().find(|(k, _)| k == "code").map(|(_, v)| v.clone()).ok_or_else(|| anyhow::anyhow!("回调里没有 code，可能取消了授权"))?;
 
     let resp: serde_json::Value = reqwest::Client::new()
@@ -101,12 +111,21 @@ mod tests {
     async fn callback_parses_code() {
         let l = TcpListener::bind("127.0.0.1:0").await.unwrap();
         let port = l.local_addr().unwrap().port();
-        let h = tokio::spawn(wait_callback(l, Duration::from_secs(5)));
+        let path = callback_path();
+        assert!(path.starts_with("/callback/") && path.len() > 30);
+        let h = tokio::spawn({
+            let path = path.clone();
+            async move { wait_callback(l, &path, Duration::from_secs(5)).await }
+        });
         let c = reqwest::Client::new();
         let _ = c.get(format!("http://127.0.0.1:{port}/favicon.ico")).send().await;
-        let r = c.get(format!("http://127.0.0.1:{port}/callback?code=abc&state=s")).send().await.unwrap();
+        // a guessed or plain callback path is refused
+        let r = c.get(format!("http://127.0.0.1:{port}/callback?code=evil")).send().await.unwrap();
+        assert_eq!(r.status(), 404);
+        let r = c.get(format!("http://127.0.0.1:{port}{path}?code=abc&state=s")).send().await.unwrap();
         assert_eq!(r.status(), 200);
         let params = h.await.unwrap().unwrap();
         assert!(params.contains(&("code".into(), "abc".into())));
+        assert!(!params.contains(&("code".into(), "evil".into())));
     }
 }

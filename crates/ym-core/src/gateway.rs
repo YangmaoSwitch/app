@@ -36,6 +36,9 @@ use crate::routing::{Needs, Route, AUTO};
 
 /// Upper bound on upstream attempts for one request, so a bad request does not walk every account.
 const MAX_ATTEMPTS: usize = 8;
+/// Longest pause taken from a provider's `Retry-After`: an absurd value must not park an account for hours;
+/// if the provider still refuses after this, the next 429 pauses it again.
+const MAX_RETRY_AFTER_SECS: i64 = 3600;
 
 pub struct Gateway {
     accounts: RwLock<Vec<Account>>,
@@ -110,6 +113,8 @@ struct Accepted {
     row: i64,
     /// `account/model` that served the request.
     served: String,
+    /// Rough prompt size (request bytes / 4), used only when the provider reports no usage.
+    prompt_estimate: u64,
 }
 
 /// List the model ids an OpenAI-compatible provider offers.
@@ -167,7 +172,7 @@ impl Gateway {
     fn authorized(&self, headers: &HeaderMap) -> bool {
         let expected = self.api_key.read().unwrap().clone();
         if expected.is_empty() {
-            return true;
+            return false; // never an open entry, even if the settings lost the key
         }
         let bearer = headers
             .get(header::AUTHORIZATION)
@@ -220,7 +225,7 @@ impl Gateway {
                     StatusCode::NOT_FOUND,
                     "no_free_model",
                     if claude {
-                        "已启用的账号里没有能走 Claude 接口的免费模型，请改用 OpenAI 接口，或先添加智谱、硅基流动等账号"
+                        "已启用的账号里没有能走 Claude 接口的免费模型，请改用 OpenAI 接口，或先添加有原生 Claude 接口的供应商账号（见“接入工具”页）"
                     } else {
                         "已启用的账号里没有符合要求的免费模型，请先在“我的账号”添加 Key 并测试连接"
                     },
@@ -271,13 +276,19 @@ impl Gateway {
     }
 
     /// First limit that would be exceeded by one more request, if any.
+    /// Token limits also count requests still in flight (e.g. long streams) at the average size of the
+    /// finished ones, so several concurrent streams cannot all start just under the cap.
     fn exceeded(&self, acct: &Account, now: DateTime<Utc>) -> anyhow::Result<Option<(Limit, u64)>> {
         for l in &acct.limits {
-            let t = self.ledger.totals_since(&acct.id, l.window.start(now, acct.added_at))?;
+            let since = l.window.start(now, acct.added_at);
+            let t = self.ledger.totals_since(&acct.id, since)?;
             let used = if l.unit == Unit::Requests { t.requests } else { t.tokens };
             let over = match l.unit {
                 Unit::Requests => (used + 1) as f64 > l.cap,
-                Unit::Tokens => used as f64 >= l.cap,
+                Unit::Tokens => {
+                    let (pending, avg) = self.ledger.pending_since(&acct.id, since)?;
+                    used as f64 + pending as f64 * avg.unwrap_or(0.0) >= l.cap
+                }
             };
             if over {
                 return Ok(Some((l.clone(), used)));
@@ -342,7 +353,7 @@ impl Gateway {
             let now = Utc::now();
             if status == 429 || status == 402 {
                 let (dur, why) = if status == 429 {
-                    let secs = resp.headers().get("retry-after").and_then(|v| v.to_str().ok()).and_then(|v| v.trim().parse::<i64>().ok()).unwrap_or(60);
+                    let secs = resp.headers().get("retry-after").and_then(|v| v.to_str().ok()).and_then(|v| retry_after_secs(v, now)).unwrap_or(60);
                     (Duration::seconds(secs), "平台返回 429")
                 } else {
                     (Duration::hours(1), "平台返回 402（额度或余额不足）")
@@ -373,7 +384,8 @@ impl Gateway {
             if !resp.status().is_success() {
                 let _ = self.ledger.cancel(row);
             }
-            return Ok(Accepted { resp, row, served: format!("{}/{model}", acct.id) });
+            let prompt_estimate = serde_json::to_vec(&body).map(|b| b.len() as u64 / 4).unwrap_or(0);
+            return Ok(Accepted { resp, row, served: format!("{}/{model}", acct.id), prompt_estimate });
         }
         Err(GwError::new(StatusCode::TOO_MANY_REQUESTS, "local_quota_reached", format!("没有可用的账号：{}", reasons.join("；"))))
     }
@@ -457,6 +469,26 @@ fn route_accounts(r: &Route, accounts: &[Account], claude: bool) -> Vec<(Account
     out
 }
 
+/// `Retry-After` as seconds (delta-seconds or an HTTP date), clamped to 1 s ..= [`MAX_RETRY_AFTER_SECS`].
+fn retry_after_secs(v: &str, now: DateTime<Utc>) -> Option<i64> {
+    let v = v.trim();
+    let secs = match v.parse::<i64>() {
+        Ok(s) => s,
+        Err(_) => (DateTime::parse_from_rfc2822(v).ok()?.with_timezone(&Utc) - now).num_seconds(),
+    };
+    Some(secs.clamp(1, MAX_RETRY_AFTER_SECS))
+}
+
+/// Text a client actually received in one SSE `data:` event (OpenAI deltas or Anthropic text deltas).
+fn delta_text_len(v: &Value) -> usize {
+    let openai = v.pointer("/choices/0/delta/content").and_then(Value::as_str).map(str::len).unwrap_or(0)
+        + v.pointer("/choices/0/delta/reasoning_content").and_then(Value::as_str).map(str::len).unwrap_or(0);
+    let claude = v.pointer("/delta/text").and_then(Value::as_str).map(str::len).unwrap_or(0)
+        + v.pointer("/delta/thinking").and_then(Value::as_str).map(str::len).unwrap_or(0)
+        + v.pointer("/delta/partial_json").and_then(Value::as_str).map(str::len).unwrap_or(0);
+    openai + claude
+}
+
 fn push_new(into: &mut Vec<(Account, String)>, more: Vec<(Account, String)>) {
     for c in more {
         if !into.iter().any(|(a, m)| a.id == c.0.id && m == &c.1) {
@@ -505,10 +537,13 @@ async fn passthrough(gw: Arc<Gateway>, a: Accepted, stream: bool) -> Response {
     let (tx, rx) = tokio::sync::mpsc::channel::<Result<Bytes, std::io::Error>>(64);
     let row = a.row;
     let code = status.as_u16();
+    let prompt_estimate = a.prompt_estimate;
     tokio::spawn(async move {
         let mut up = a.resp.bytes_stream();
         let mut buf = String::new();
         let mut usage = (0u64, 0u64);
+        let mut seen_usage = false;
+        let mut text_bytes = 0usize;
         while let Some(chunk) = up.next().await {
             match chunk {
                 Ok(b) => {
@@ -516,10 +551,11 @@ async fn passthrough(gw: Arc<Gateway>, a: Accepted, stream: bool) -> Response {
                     while let Some(i) = buf.find('\n') {
                         let line: String = buf.drain(..=i).collect();
                         if let Some(data) = line.trim().strip_prefix("data:") {
-                            if data.contains("\"usage\"") {
-                                if let Some(u) = serde_json::from_str::<Value>(data.trim()).ok().and_then(|v| usage_from(&v)) {
-                                    usage = (usage.0.max(u.0), usage.1.max(u.1));
-                                }
+                            let Ok(v) = serde_json::from_str::<Value>(data.trim()) else { continue };
+                            text_bytes += delta_text_len(&v);
+                            if let Some(u) = usage_from(&v) {
+                                seen_usage = true;
+                                usage = (usage.0.max(u.0), usage.1.max(u.1));
                             }
                         }
                     }
@@ -532,6 +568,11 @@ async fn passthrough(gw: Arc<Gateway>, a: Accepted, stream: bool) -> Response {
                     break;
                 }
             }
+        }
+        // A stream cut short (client closed it, provider dropped it) usually carries no usage: count an estimate
+        // instead of zero, erring high (about 2 bytes per token) so the local cap is not undercounted.
+        if !seen_usage {
+            usage = (prompt_estimate, text_bytes.div_ceil(2) as u64);
         }
         let _ = gw.ledger.finish(row, code, usage.0, usage.1);
     });
@@ -824,6 +865,45 @@ mod tests {
         let (_gw, url) = start(vec![a]).await;
         let r = reqwest::Client::new().post(format!("{url}/v1/chat/completions")).bearer_auth("local-key").json(&json!({"model": "boom"})).send().await.unwrap();
         assert_eq!(r.status(), 500);
+    }
+
+    #[test]
+    fn retry_after_is_clamped() {
+        let now = Utc::now();
+        assert_eq!(retry_after_secs("30", now), Some(30));
+        assert_eq!(retry_after_secs("999999", now), Some(MAX_RETRY_AFTER_SECS));
+        assert_eq!(retry_after_secs("0", now), Some(1));
+        let date = (now + Duration::seconds(120)).to_rfc2822();
+        let s = retry_after_secs(&date, now).unwrap();
+        assert!((118..=120).contains(&s), "{s}");
+        assert_eq!(retry_after_secs("soon", now), None);
+    }
+
+    #[test]
+    fn token_cap_counts_requests_in_flight() {
+        let mut a = acct("a", "http://x", 0.0);
+        a.limits = vec![Limit { unit: Unit::Tokens, cap: 1000.0, amount: 1000.0, window: Window::Rolling { seconds: 3600 }, label: "t".into() }];
+        let gw = Gateway::new(vec![a.clone()], "k".into(), Arc::new(Ledger::in_memory().unwrap()), Arc::new(Keys));
+        let now = Utc::now();
+        let r = gw.ledger.begin("a", "m", now).unwrap();
+        gw.ledger.finish(r, 200, 200, 200).unwrap(); // 400 used, average 400 per request
+        assert!(gw.exceeded(&a, now).unwrap().is_none());
+        gw.ledger.begin("a", "m", now).unwrap(); // a long stream still running: 400 + 400 estimated
+        assert!(gw.exceeded(&a, now).unwrap().is_none());
+        gw.ledger.begin("a", "m", now).unwrap(); // a second one: 400 + 800 >= 1000
+        assert!(gw.exceeded(&a, now).unwrap().is_some());
+    }
+
+    #[test]
+    fn empty_local_key_is_refused() {
+        let gw = Gateway::new(vec![], String::new(), Arc::new(Ledger::in_memory().unwrap()), Arc::new(Keys));
+        assert!(!gw.authorized(&HeaderMap::new()));
+    }
+
+    #[test]
+    fn delta_text_counts_both_formats() {
+        assert_eq!(delta_text_len(&json!({"choices": [{"delta": {"content": "hello"}}]})), 5);
+        assert_eq!(delta_text_len(&json!({"type": "content_block_delta", "delta": {"type": "text_delta", "text": "hi"}})), 2);
     }
 
     #[tokio::test]

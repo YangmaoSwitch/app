@@ -1,7 +1,7 @@
 {
  "version": 1,
- "generated_at": "2026-11-22T13:10:11+00:00",
- "count": 71,
+ "generated_at": "2026-11-27T01:46:54+00:00",
+ "count": 109,
  "providers": [
   {
    "id": "agnes-ai",
@@ -109,7 +109,7 @@
    "region": "global",
    "api_usable": true,
    "status": "verified",
-   "last_verified": "2026-11-22",
+   "last_verified": "2026-11-24",
    "summary": "志愿者贡献显卡的开源社区服务，OpenAI 兼容接口免费调用在线 worker 提供的文本模型，不注册可用匿名 Key 0000000000，但排队优先级最低。",
    "api": {
     "protocol": [
@@ -132,7 +132,8 @@
      "period": "minute",
      "scope": "ip",
      "note": "每个地址另限每秒 2 次；同一来源同时进行的请求最多 5 个；没有 kudos 时每次请求的免费输出上限随排队情况在 512 到 4096 token 之间变化，更长的输出需要 kudos",
-     "evidence": "https://haidra-org.github.io/AI-Horde/reference/service_limits/"
+     "evidence": "https://haidra-org.github.io/AI-Horde/reference/service_limits/",
+     "quote": "An idle fleet can serve instruction and reasoning replies longer than the former 512-token allowance"
     }
    ],
    "overage": "blocked",
@@ -194,13 +195,104 @@
    }
   },
   {
+   "id": "ai21-labs",
+   "name": "AI21 Labs",
+   "homepage": "https://ai21.com",
+   "region": "global",
+   "api_usable": true,
+   "status": "verified",
+   "last_verified": "2026-11-24",
+   "summary": "新账号注册即送 10 美元试用额度，无需信用卡，可用于 Jamba 系列模型的 API、SDK 与 Playground 调用。",
+   "api": {
+    "protocol": [
+     "openai"
+    ],
+    "base_url": "https://api.ai21.com/studio/v1",
+    "models_access": "quota",
+    "quota_models": [
+     "jamba-large",
+     "jamba-mini"
+    ]
+   },
+   "signup": {
+    "url": "https://studio.ai21.com/sign-up",
+    "requires": [
+     "email",
+     "google",
+     "github"
+    ],
+    "min_age": 18
+   },
+   "quotas": [
+    {
+     "unit": "usd",
+     "amount": 10,
+     "period": "one-time",
+     "scope": "account",
+     "new_users": true,
+     "evidence": "https://docs.ai21.com/docs/usage-cost.md",
+     "quote": "New accounts are given a \\$10 credit good for three months on the AI21 platform.",
+     "note": "定价页写“$10 credits for 7 days”，文档页写“$10 credit good for three months”，两处金额一致（10 美元）但有效期说法不同；额度可用于 API、SDK 与 Playground 的全部用量。"
+    }
+   ],
+   "overage": "auto_paid",
+   "onboarding": {
+    "level": "L2",
+    "key_page": "https://studio.ai21.com/v2/account/api-key"
+   },
+   "terms": [
+    {
+     "point": "必须年满 18 岁（或所在司法辖区的成年年龄）才能使用服务（第 2 条）",
+     "url": "https://www.ai21.com/terms-policies/terms-of-use/"
+    },
+    {
+     "point": "禁止规避限流、用量或访问相关功能，或使用自动化手段访问服务（第 6.2(f) 条）",
+     "url": "https://www.ai21.com/terms-policies/terms-of-use/"
+    },
+    {
+     "point": "除非另有书面约定，AI21 不会用客户数据训练其基础或通用 AI 模型（第 7.2 条）",
+     "url": "https://www.ai21.com/terms-policies/terms-of-use/"
+    }
+   ],
+   "tags": [
+    "新人赠送",
+    "试用"
+   ],
+   "sources": [
+    "https://www.ai21.com/pricing",
+    "https://docs.ai21.com/docs/usage-cost.md",
+    "https://docs.ai21.com/docs/create-api-key.md",
+    "https://docs.ai21.com/reference/jamba-1-6-api-ref.md",
+    "https://www.ai21.com/terms-policies/terms-of-use/"
+   ],
+   "en": {
+    "summary": "New accounts get a $10 trial credit, no credit card needed, usable for the Jamba family models via API, SDK and the playground.",
+    "tags": [
+     "New-user offer",
+     "Trial"
+    ],
+    "quotas": [
+     {
+      "models": "All Jamba platform usage (API, SDK, playground)",
+      "condition": "New accounts",
+      "note": "The pricing page says \"$10 credits for 7 days\" while the docs say \"$10 credit good for three months\"; both agree on $10 but differ on the validity period."
+     }
+    ],
+    "terms": [
+     "You must be at least 18 years of age (or the age of majority in your jurisdiction) to use the Services (Section 2)",
+     "Circumventing rate-limiting, usage or access-related features, or using automated means to access the Services is prohibited (Section 6.2(f))",
+     "Unless otherwise agreed in writing, AI21 will not use your Customer Data to train its foundational or generally available AI models (Section 7.2)"
+    ]
+   }
+  },
+  {
    "id": "aihubmix",
    "name": "AiHubMix",
    "homepage": "https://aihubmix.com",
    "region": "global",
    "api_usable": true,
    "status": "verified",
-   "last_verified": "2026-11-19",
+   "last_verified": "2026-11-24",
    "summary": "聚合平台的免费模型，每日重置。",
    "api": {
     "protocol": [
@@ -223,7 +315,8 @@
      "period": "day",
      "scope": "account",
      "evidence": "https://aihubmix.com/call/free_quota_config",
-     "models": "免费模型"
+     "models": "免费模型",
+     "quote": "\"daily_request_limit\":100"
     },
     {
      "unit": "tokens",
@@ -231,7 +324,8 @@
      "period": "day",
      "scope": "account",
      "evidence": "https://aihubmix.com/call/free_quota_config",
-     "models": "免费模型"
+     "models": "免费模型",
+     "quote": "\"daily_token_limit\":1000000"
     },
     {
      "unit": "requests",
@@ -239,7 +333,8 @@
      "period": "minute",
      "scope": "account",
      "evidence": "https://aihubmix.com/call/free_quota_config",
-     "models": "免费模型"
+     "models": "免费模型",
+     "quote": "\"minute_limit\":10"
     }
    ],
    "overage": "blocked",
@@ -384,7 +479,7 @@
    "region": "cn",
    "api_usable": true,
    "status": "verified",
-   "last_verified": "2026-11-19",
+   "last_verified": "2026-11-26",
    "summary": "新人部分模型各送 100 万 Token，90 天有效；用完默认自动转付费。",
    "api": {
     "protocol": [
@@ -410,7 +505,8 @@
      "scope": "model",
      "evidence": "https://help.aliyun.com/zh/model-studio/new-free-quota",
      "expires_days": 90,
-     "note": "每个模型单独一份"
+     "note": "每个模型单独一份",
+     "quote": "免费额度用完后自动转为按量付费。"
     }
    ],
    "overage": "auto_paid",
@@ -450,7 +546,7 @@
    "region": "cn",
    "api_usable": true,
    "status": "verified",
-   "last_verified": "2026-11-19",
+   "last_verified": "2026-11-23",
    "summary": "每天赠送积分，所有模型共用；新用户注册后 14 天内每天 5 积分。",
    "api": {
     "protocol": [
@@ -476,7 +572,8 @@
      "period": "day",
      "scope": "account",
      "evidence": "https://amd-aim.github.io/radeon-cloud-docs/api/rate-limits/",
-     "reset": "00:00 Asia/Shanghai"
+     "reset": "00:00 Asia/Shanghai",
+     "quote": "Counted in Token Factory points (pts) over the calendar day in Beijing time; resets at 00:00 UTC+8"
     },
     {
      "unit": "points",
@@ -486,7 +583,8 @@
      "evidence": "https://amd-aim.github.io/radeon-cloud-docs/api/rate-limits/",
      "reset": "00:00 Asia/Shanghai",
      "condition": "注册 14 天内",
-     "new_users": true
+     "new_users": true,
+     "quote": "Counted in Token Factory points (pts) over the calendar day in Beijing time; resets at 00:00 UTC+8"
     }
    ],
    "overage": "blocked",
@@ -608,6 +706,124 @@
      "Multiple accounts are prohibited, including via several emails, aliases, related entities or scripted sign-ups to get around the free plan or limits (section 13)",
      "The free plan may be changed, limited or discontinued at any time without notice (section 9)",
      "Using the service to build datasets or training corpora, or reselling it, is prohibited (4.3)"
+    ]
+   }
+  },
+  {
+   "id": "aws-bedrock",
+   "name": "Amazon Bedrock (AWS)",
+   "name_zh": "亚马逊云科技 Bedrock",
+   "homepage": "https://aws.com",
+   "region": "global",
+   "api_usable": true,
+   "status": "verified",
+   "last_verified": "2026-11-27",
+   "summary": "AWS 新客户注册即得 100 美元额度，完成指定活动最多再得 100 美元，可用于 Amazon Bedrock 的模型调用；Free plan 最长 6 个月，额度用完或到期后账号关闭，期间不产生费用。",
+   "api": {
+    "protocol": [
+     "openai"
+    ],
+    "base_url": "https://bedrock-runtime.us-east-1.amazonaws.com/openai/v1",
+    "models_access": "quota"
+   },
+   "signup": {
+    "url": "https://signin.aws.amazon.com/signup?request_type=builderId",
+    "requires": [
+     "email"
+    ],
+    "notes": "大多数新客户注册不需要支付方式，个别情况可能要求提供支付方式验证身份。只有从未有过 AWS 账号的新客户才可领取。Bedrock API Key 需在控制台 Bedrock 页面的 API keys 中生成（长期 Key 会创建 IAM 用户），地址按区域区分。"
+   },
+   "quotas": [
+    {
+     "unit": "usd",
+     "amount": 100,
+     "period": "one-time",
+     "scope": "account",
+     "new_users": true,
+     "condition": "新 AWS 客户注册（Free plan 或 Paid plan 均可）",
+     "note": "额度通用于参与的 AWS 服务，Bedrock 在 Free plan 可用服务之列；FAQ 写额度 6 个月后过期，条款页写 12 个月，按 6 个月理解；Free plan 在 6 个月或额度用完时结束，账号随之关闭",
+     "evidence": "https://aws.amazon.com/free/",
+     "quote": "When you create a new AWS Free Tier account, you get $100 in credits immediately."
+    },
+    {
+     "unit": "usd",
+     "amount": 100,
+     "period": "one-time",
+     "scope": "account",
+     "new_users": true,
+     "condition": "在控制台 Explore AWS 中完成指定活动，最多再得 100 美元",
+     "evidence": "https://aws.amazon.com/free/",
+     "quote": "As you explore key services, you can earn up to $100 more."
+    }
+   ],
+   "overage": "blocked",
+   "onboarding": {
+    "level": "L2",
+    "key_page": "https://console.aws.amazon.com/bedrock"
+   },
+   "terms": [
+    {
+     "point": "同一人不能为多个账号领取 Free Tier 额度，已有或曾有 AWS 账号的不符合条件",
+     "url": "https://aws.amazon.com/free/terms/"
+    },
+    {
+     "point": "Free plan 账号仅供评估，不应处理敏感数据",
+     "url": "https://aws.amazon.com/free/terms/"
+    },
+    {
+     "point": "Free plan 到期后账号停用，90 天内不升级为 Paid plan 将删除账号和数据",
+     "url": "https://aws.amazon.com/free/terms/"
+    },
+    {
+     "point": "AWS 可随时终止 Free Tier 页面上的任何优惠",
+     "url": "https://aws.amazon.com/free/terms/"
+    },
+    {
+     "point": "Free Tier 额度不适用于中国区（宁夏、北京）和 GovCloud 区域",
+     "url": "https://aws.amazon.com/free/free-tier-faqs/"
+    },
+    {
+     "point": "升级为 Paid plan 后，超出额度的用量按标准价格自动计费",
+     "url": "https://docs.aws.amazon.com/awsaccountbilling/latest/aboutv2/free-tier-plans.html"
+    }
+   ],
+   "tags": [
+    "新人赠送",
+    "试用"
+   ],
+   "sources": [
+    "https://aws.com",
+    "https://aws.amazon.com/free/",
+    "https://aws.amazon.com/free/free-tier-faqs/",
+    "https://aws.amazon.com/free/terms/",
+    "https://docs.aws.amazon.com/awsaccountbilling/latest/aboutv2/free-tier-plans.html",
+    "https://docs.aws.amazon.com/bedrock/latest/userguide/api-keys.html",
+    "https://docs.aws.amazon.com/bedrock/latest/userguide/bedrock-mantle.html",
+    "https://aws.amazon.com/bedrock/pricing/"
+   ],
+   "en": {
+    "summary": "New AWS customers get $100 in credits at sign-up and can earn up to $100 more through set activities, usable for model calls on Amazon Bedrock; the Free plan lasts up to 6 months and the account closes when credits run out or the period ends, with no charges during it.",
+    "signup_notes": "Most new customers need no payment method to sign up, though one may be requested to verify identity. Only customers who have never had an AWS account qualify. Bedrock API keys are generated under API keys in the Bedrock console (a long-term key creates an IAM user); endpoints are per region.",
+    "tags": [
+     "New-user credits",
+     "Trial"
+    ],
+    "quotas": [
+     {
+      "condition": "New AWS customers (Free plan or Paid plan)",
+      "note": "Credits apply across participating AWS services, and Bedrock is available on the Free plan; the FAQ says credits expire after 6 months while the terms say 12 months, read as 6 months; the Free plan ends after 6 months or when credits run out, and the account closes"
+     },
+     {
+      "condition": "Complete set activities in Explore AWS in the console for up to $100 more"
+     }
+    ],
+    "terms": [
+     "Free Tier credits cannot be received for more than one account; people who have or had an AWS account are not eligible",
+     "Free plan accounts are for evaluation and should not process sensitive data",
+     "After the Free plan ends the account is suspended and is deleted with its data if not upgraded within 90 days",
+     "AWS may terminate any offer on the Free Tier page at any time",
+     "Free Tier credits do not apply in the China (Ningxia, Beijing) and GovCloud regions",
+     "After upgrading to the Paid plan, usage beyond the credits is billed at standard rates automatically"
     ]
    }
   },
@@ -857,6 +1073,123 @@
    }
   },
   {
+   "id": "blockrun",
+   "name": "BlockRun",
+   "homepage": "https://blockrun.ai",
+   "region": "global",
+   "api_usable": true,
+   "status": "verified",
+   "last_verified": "2026-11-26",
+   "summary": "按次付费的模型网关，官方标为免费的 8 个聊天模型无需钱包、无需注册即可调用，按 IP 限速每分钟 30 次、每小时 300 次；其余模型需用 USDC 或账户余额付费。",
+   "api": {
+    "protocol": [
+     "openai",
+     "anthropic"
+    ],
+    "base_url": "https://blockrun.ai/api/v1",
+    "models_url": "https://blockrun.ai/api/v1/models",
+    "models_access": "paid",
+    "free_models": [
+     "nvidia/minimax-m3.1-flash",
+     "nvidia/muse-glimmer-30b",
+     "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning",
+     "nvidia/nemotron-3-ultra-550b",
+     "nvidia/nemotron-3.5-bolt",
+     "nvidia/nemotron-3.5-lightning",
+     "nvidia/nemotron-3-super-120b",
+     "poolside/laguna-xs-2.1"
+    ],
+    "free_model_rule": "/v1/models 中 billing_mode 为 free 的模型免费，无需付款头。"
+   },
+   "signup": {
+    "url": "https://blockrun.ai",
+    "requires": [],
+    "notes": "免费模型不需要钱包、付款头或注册；付费模型可用 USDC 钱包按次付款，或用 Google 登录 user.blockrun.ai 获取 API Key 并充值。"
+   },
+   "quotas": [
+    {
+     "unit": "requests",
+     "amount": 30,
+     "period": "minute",
+     "scope": "ip",
+     "models": "全部免费模型合计",
+     "evidence": "https://blockrun.ai/docs/api-reference/rate-limits",
+     "quote": "Free chat models (the ones GET /v1/models lists with \"billing_mode\": \"free\") need no wallet and no payment, so they are the one place BlockRun throttles per source IP: 30 requests per minute (burst) and 300 requests per hour (sustained)."
+    },
+    {
+     "unit": "requests",
+     "amount": 300,
+     "period": "hour",
+     "scope": "ip",
+     "models": "全部免费模型合计",
+     "note": "免费模型池整体容量不足时也会返回 429，与个人额度无关。",
+     "evidence": "https://blockrun.ai/docs/api-reference/rate-limits",
+     "quote": "Free chat models (the ones GET /v1/models lists with \"billing_mode\": \"free\") need no wallet and no payment, so they are the one place BlockRun throttles per source IP: 30 requests per minute (burst) and 300 requests per hour (sustained)."
+    }
+   ],
+   "overage": "blocked",
+   "expires": null,
+   "onboarding": {
+    "level": "L1"
+   },
+   "terms": [
+    {
+     "point": "免费模型运行在上游免费档上，其条款可能允许上游用提示词改进服务，不要发送敏感数据",
+     "url": "https://blockrun.ai/faq"
+    },
+    {
+     "point": "免费模型故障时可能自动切换到其他免费模型",
+     "url": "https://blockrun.ai/faq"
+    },
+    {
+     "point": "禁止在受美国全面制裁的国家或地区使用",
+     "url": "https://blockrun.ai/terms"
+    },
+    {
+     "point": "禁止规避付费、干扰服务，或以隐瞒来源的方式转售",
+     "url": "https://blockrun.ai/terms"
+    }
+   ],
+   "tags": [
+    "聚合",
+    "免费模型"
+   ],
+   "sources": [
+    "https://blockrun.ai/pricing",
+    "https://blockrun.ai/faq",
+    "https://blockrun.ai/docs/api-reference/rate-limits",
+    "https://blockrun.ai/docs/api-reference/chat-completions",
+    "https://blockrun.ai/llms.txt",
+    "https://api.blockrun.ai/llms.txt",
+    "https://user.blockrun.ai/dashboard/keys",
+    "https://blockrun.ai/terms"
+   ],
+   "en": {
+    "summary": "Pay-per-call model gateway; the 8 chat models marked free can be called with no wallet and no sign-up, rate-limited per IP to 30 requests per minute and 300 per hour; other models are paid in USDC or from an account balance.",
+    "signup_notes": "Free models need no wallet, payment header or sign-up; paid models are paid per call from a USDC wallet, or with an API key from user.blockrun.ai (Google sign-in) and a topped-up balance.",
+    "free_model_rule": "Models listed in /v1/models with billing_mode free are free and need no payment header.",
+    "tags": [
+     "Aggregator",
+     "Free model"
+    ],
+    "quotas": [
+     {
+      "models": "All free models combined"
+     },
+     {
+      "models": "All free models combined",
+      "note": "When the free model pool itself is out of capacity it also returns 429, independent of your quota."
+     }
+    ],
+    "terms": [
+     "Free models run on upstream free tiers whose terms may let the host use prompts to improve its service; do not send sensitive data",
+     "Free models may fall back to other free models when one fails",
+     "Use from countries or regions under comprehensive U.S. sanctions is prohibited",
+     "Circumventing payment, interfering with the service, or reselling access in a way that misrepresents its origin is prohibited"
+    ]
+   }
+  },
+  {
    "id": "bytez",
    "name": "Bytez",
    "homepage": "https://bytez.com",
@@ -1053,13 +1386,143 @@
    }
   },
   {
+   "id": "clod",
+   "name": "CLōD",
+   "homepage": "https://clod.io",
+   "region": "global",
+   "api_usable": true,
+   "status": "verified",
+   "last_verified": "2026-11-26",
+   "summary": "OpenAI 兼容的模型网关，首次充值任意金额后，每天可免费调用 3 个开源模型 50 次请求、共 20 万 tokens。",
+   "api": {
+    "protocol": [
+     "openai"
+    ],
+    "base_url": "https://api.clod.io/v1",
+    "models_access": "paid",
+    "free_models": [
+     "clod/trinity-mini",
+     "clod/gemma-4-31b-it",
+     "clod/qwen3p5-9b"
+    ],
+    "free_model_rule": "价格页列出的免费模型：Trinity Mini、Qwen 3.5 9B 和 Gemma 4。"
+   },
+   "signup": {
+    "url": "https://app.clod.io/auth",
+    "requires": [
+     "email",
+     "card"
+    ],
+    "notes": "可用邮箱、Google 或 Microsoft 账号注册；每日免费用量需先充值一次（金额不限）才会开启。隐私政策写明服务不面向 16 岁以下用户。"
+   },
+   "quotas": [
+    {
+     "unit": "requests",
+     "amount": 50,
+     "period": "day",
+     "scope": "account",
+     "models": "免费模型",
+     "condition": "首次充值任意金额后开启",
+     "evidence": "https://clod.io/pricing",
+     "quote": "50 requests and 200,000 tokens per day",
+     "note": "单次请求最多 8,000 输入 tokens、2,000 输出 tokens；重置时间未写明。官方称免费请求不会扣费，达到上限会直接报错。"
+    },
+    {
+     "unit": "requests",
+     "amount": 1000,
+     "period": "day",
+     "scope": "account",
+     "models": "免费模型",
+     "condition": "累计消费 25 美元后",
+     "evidence": "https://clod.io/pricing",
+     "quote": "It turns on with your first credit top-up, any amount.",
+     "note": "价格页已不再提供“消费 25 美元后每天 1,000 次”这一档，现为首次充值后每天 50 次。",
+     "ended": "2026-11-26"
+    },
+    {
+     "unit": "tokens",
+     "amount": 200000,
+     "period": "day",
+     "scope": "account",
+     "models": "免费模型",
+     "condition": "首次充值任意金额后开启",
+     "evidence": "https://clod.io/pricing",
+     "quote": "50 requests and 200,000 tokens per day",
+     "note": "与每天 50 次请求的限制同时生效。"
+    }
+   ],
+   "overage": "blocked",
+   "onboarding": {
+    "level": "L2",
+    "key_page": "https://app.clod.io"
+   },
+   "terms": [
+    {
+     "point": "隐私政策写明不会用用户的输入和输出训练或改进模型",
+     "url": "https://clod.io/privacy"
+    },
+    {
+     "point": "服务不面向 16 岁以下用户",
+     "url": "https://clod.io/privacy"
+    },
+    {
+     "point": "请求会按电价路由到不同数据中心处理，可能位于美国等其他地区",
+     "url": "https://clod.io/privacy"
+    }
+   ],
+   "tags": [
+    "免费模型",
+    "每日赠送"
+   ],
+   "sources": [
+    "https://clod.io/pricing",
+    "https://clod.io",
+    "https://app.clod.io/docs",
+    "https://app.clod.io/models",
+    "https://app.clod.io/models.json",
+    "https://app.clod.io/llms.txt",
+    "https://clod.io/privacy"
+   ],
+   "en": {
+    "summary": "OpenAI-compatible model gateway. After a first top-up of any amount, you get 50 free requests and 200,000 tokens per day on 3 open-source models.",
+    "signup_notes": "Sign up with email, Google or Microsoft. Daily free usage only turns on after your first credit top-up (any amount). The privacy policy says the service is not meant for anyone under 16.",
+    "free_model_rule": "Free models listed on the pricing page: Trinity Mini, Qwen 3.5 9B and Gemma 4.",
+    "tags": [
+     "Free model",
+     "Daily credits"
+    ],
+    "quotas": [
+     {
+      "models": "Free models",
+      "condition": "Turns on after the first top-up of any amount",
+      "note": "Each request is capped at 8,000 input and 2,000 output tokens. Reset time is not stated. The site says free requests are never charged and you get an error at the limit."
+     },
+     {
+      "models": "Free models",
+      "condition": "After a $25 purchase",
+      "note": "The pricing page no longer offers the 1,000 requests/day tier after $25 spent. It now gives 50 requests/day after the first top-up."
+     },
+     {
+      "models": "Free models",
+      "condition": "Turns on after the first top-up of any amount",
+      "note": "Applies together with the 50 requests/day limit."
+     }
+    ],
+    "terms": [
+     "The privacy policy says inputs and outputs are not used to train or improve AI models",
+     "The service is not meant for anyone under 16",
+     "Requests are routed by energy price to data centers that may be in other jurisdictions, including the US"
+    ]
+   }
+  },
+  {
    "id": "cloudflare-workers-ai",
    "name": "Cloudflare Workers AI",
    "homepage": "https://developers.cloudflare.com/workers-ai/",
    "region": "global",
    "api_usable": true,
    "status": "verified",
-   "last_verified": "2026-11-19",
+   "last_verified": "2026-11-25",
    "summary": "免费计划每天 1 万 Neurons，超额直接报错。",
    "api": {
     "protocol": [
@@ -1083,7 +1546,8 @@
      "period": "day",
      "scope": "account",
      "evidence": "https://developers.cloudflare.com/workers-ai/platform/pricing/",
-     "reset": "00:00 UTC"
+     "reset": "00:00 UTC",
+     "quote": "Our free allocation allows anyone to use a total of 10,000 Neurons per day at no charge."
     }
    ],
    "overage": "blocked",
@@ -1118,7 +1582,7 @@
    "region": "global",
    "api_usable": true,
    "status": "verified",
-   "last_verified": "2026-11-19",
+   "last_verified": "2026-11-27",
    "summary": "试用 Key 免费，用于测试和概念验证。",
    "api": {
     "protocol": [
@@ -1140,7 +1604,8 @@
      "amount": 1000,
      "period": "month",
      "scope": "key",
-     "evidence": "https://docs.cohere.com/docs/rate-limits"
+     "evidence": "https://docs.cohere.com/docs/rate-limits",
+     "quote": "Trial keys (and prod keys on newer Chat model variants) are limited to 1,000 API calls a month."
     },
     {
      "unit": "requests",
@@ -1148,7 +1613,8 @@
      "period": "minute",
      "scope": "key",
      "evidence": "https://docs.cohere.com/docs/rate-limits",
-     "models": "对话接口"
+     "models": "对话接口",
+     "quote": "Command A20 req / min"
     }
    ],
    "overage": "blocked",
@@ -1169,6 +1635,303 @@
      {
       "models": "Chat endpoint"
      }
+    ]
+   }
+  },
+  {
+   "id": "coreweave",
+   "name": "CoreWeave Forge",
+   "homepage": "https://coreweave.com/forge",
+   "region": "global",
+   "api_usable": true,
+   "status": "verified",
+   "last_verified": "2026-11-24",
+   "summary": "CoreWeave Forge 免费档提供 Serverless Inference 的 OpenAI 兼容 API，含每月 Inference 额度（官方未公布具体数值），用尽后需开启按量付费或升级。",
+   "api": {
+    "protocol": [
+     "openai"
+    ],
+    "base_url": "https://api.inference.wandb.ai/v1",
+    "models_access": "quota"
+   },
+   "signup": {
+    "url": "https://id.coreweave.com/signup",
+    "requires": [
+     "email"
+    ],
+    "min_age": 18,
+    "notes": "用邮箱注册；Serverless Inference 仅限受支持的地理位置访问，其他地区返回 403。"
+   },
+   "quotas": [
+    {
+     "unit": "credits",
+     "amount": null,
+     "period": "month",
+     "scope": "org",
+     "evidence": "https://docs.coreweave.com/products/inference/serverless/usage-limits.md",
+     "note": "官方未公布免费档 Inference 额度的具体数值；免费档额度用尽后需开启按量付费或升级计划。官方 FAQ 说明部分档位为每月循环发放、部分为一次性发放，免费档归属未明确。",
+     "quote": "Your allowance is used first."
+    }
+   ],
+   "overage": "blocked",
+   "onboarding": {
+    "level": "L2",
+    "key_page": "https://forge.coreweave.com/settings"
+   },
+   "terms": [
+    {
+     "point": "用户须年满 18 岁",
+     "url": "https://docs.coreweave.com/policies/terms-of-service"
+    },
+    {
+     "point": "Serverless Inference 仅限受支持的地理位置访问，受美国贸易管制等合规要求限制，其他地区返回 403",
+     "url": "https://docs.coreweave.com/products/inference/serverless/usage-limits.md"
+    },
+    {
+     "point": "使用须遵守可接受使用政策（AUP）",
+     "url": "https://docs.coreweave.com/policies/terms-of-service/acceptable-use-policy"
+    }
+   ],
+   "tags": [
+    "免费模型",
+    "每月赠送"
+   ],
+   "sources": [
+    "https://coreweave.com/forge-pricing",
+    "https://docs.coreweave.com/products/inference/serverless/usage-limits.md",
+    "https://docs.coreweave.com/products/inference/serverless.md",
+    "https://docs.coreweave.com/products/inference/serverless/api-reference.md",
+    "https://docs.coreweave.com/policies/terms-of-service"
+   ],
+   "en": {
+    "summary": "CoreWeave Forge's free plan provides an OpenAI-compatible Serverless Inference API with a monthly inference allowance (exact amount not published); once used up you must enable pay-as-you-go or upgrade.",
+    "signup_notes": "Sign up with email; Serverless Inference is only available from supported geographic locations, other regions get a 403.",
+    "tags": [
+     "Free model",
+     "Monthly credits"
+    ],
+    "quotas": [
+     {
+      "note": "The exact amount of the free-tier inference allowance is not published; once used up you must enable pay-as-you-go or upgrade."
+     }
+    ],
+    "terms": [
+     "Users must be at least 18 years old",
+     "Serverless Inference is only available from supported geographic locations, subject to US trade controls and other compliance requirements; other regions get a 403",
+     "Use must comply with the Acceptable Use Policy (AUP)"
+    ]
+   }
+  },
+  {
+   "id": "crusoe",
+   "name": "Crusoe Cloud",
+   "homepage": "https://crusoe.ai",
+   "region": "global",
+   "api_usable": true,
+   "status": "verified",
+   "last_verified": "2026-11-24",
+   "summary": "Crusoe 的托管推理平台，文档写明可用 5 美元免费额度试用 Serverless Inference 和 Serverless Fine-Tuning，之后按 token 计费。",
+   "api": {
+    "protocol": [
+     "openai"
+    ],
+    "base_url": "https://api.inference.crusoecloud.com/v1",
+    "models_access": "quota",
+    "models": [
+     "deepseek-ai/DeepSeek-V4.1-Flash",
+     "google/gemma-4-31b-it",
+     "nvidia/Nemotron-3-Nano-Omni-Reasoning-30B-A3B",
+     "nvidia/nemotron-3.5-lightning-30b-a3b",
+     "nvidia/nemotron-3.5-super-vl-120b-a12b",
+     "openai/gpt-oss-120b",
+     "qwen/Qwen3.8-27B",
+     "zai-org/GLM-5.3",
+     "zai-org/GLM-5.3-Flash"
+    ]
+   },
+   "signup": {
+    "url": "https://console.crusoecloud.com/request-foundry",
+    "requires": [
+     "email",
+     "company",
+     "card"
+    ],
+    "notes": "注册表单要求填写公司名称，可用 Google 或 GitHub 注册。“创建账号”文档写明使用托管推理服务须启用计费并绑定有效的非预付信用卡；但限流文档又列出了“未添加支付方式”账号的默认限额，两者说法不一致，这里按需要绑卡记录。"
+   },
+   "quotas": [
+    {
+     "unit": "usd",
+     "amount": 5,
+     "period": "one-time",
+     "scope": "account",
+     "models": "Serverless Inference 与 Serverless Fine-Tuning",
+     "evidence": "https://docs.crusoe.ai/quickstart/getting-started-with-serverless-inference",
+     "quote": "Use $5 in free credits to explore",
+     "note": "文档页顶部横幅写明；官方未写明有效期、是否仅限新账号以及发放条件。"
+    },
+    {
+     "unit": "tokens",
+     "amount": 500000,
+     "period": "minute",
+     "scope": "model",
+     "condition": "未添加支付方式的组织（每个项目每个模型）",
+     "evidence": "https://docs.crusoe.ai/serverless-inference/rate-limits",
+     "quote": "Your default limits depend on whether your organization has a payment method on file",
+     "note": "速率上限，不是赠送额度；同时限每分钟 30 次请求。添加支付方式后为每分钟 2,000,000 token、600 次请求。"
+    }
+   ],
+   "overage": "unknown",
+   "onboarding": {
+    "level": "L2",
+    "key_page": "https://console.crusoecloud.com/foundry/models",
+    "quota_headers": [
+     "x-ratelimit-limit-tokens",
+     "x-ratelimit-remaining-tokens",
+     "x-ratelimit-limit-requests",
+     "x-ratelimit-remaining-requests"
+    ]
+   },
+   "terms": [
+    {
+     "point": "Serverless Inference 流量可能由任意 Crusoe Cloud 机房处理",
+     "url": "https://docs.crusoe.ai/quickstart/getting-started-with-serverless-inference"
+    },
+    {
+     "point": "使用托管推理服务需要启用计费，须绑定有效的非预付信用卡",
+     "url": "https://docs.crusoe.ai/create-an-account"
+    }
+   ],
+   "tags": [
+    "新人赠送",
+    "试用"
+   ],
+   "sources": [
+    "https://www.crusoe.ai/cloud/pricing",
+    "https://crusoe.ai/cloud/managed-inference",
+    "https://docs.crusoe.ai/quickstart/getting-started-with-serverless-inference",
+    "https://docs.crusoe.ai/serverless-inference/rate-limits",
+    "https://docs.crusoe.ai/serverless-inference/available-models",
+    "https://docs.crusoe.ai/create-an-account"
+   ],
+   "en": {
+    "summary": "Crusoe's managed inference platform; the docs say you can use $5 in free credits to try Serverless Inference and Serverless Fine-Tuning, then usage is billed per token.",
+    "signup_notes": "The sign-up form asks for a company name; Google or GitHub sign-up is available. The account docs say billing must be enabled with a valid non-prepaid credit card to use managed inference, while the rate-limit docs list default limits for organizations with no payment method; the two disagree, so a card is recorded as required.",
+    "tags": [
+     "New-user credits",
+     "Trial"
+    ],
+    "quotas": [
+     {
+      "models": "Serverless Inference and Serverless Fine-Tuning",
+      "note": "Stated in the docs banner; expiry, whether it is only for new accounts, and grant conditions are not published."
+     },
+     {
+      "condition": "Organizations without a payment method (per project, per model)",
+      "note": "A rate limit, not a credit; also 30 requests per minute. With a payment method the limits are 2,000,000 tokens and 600 requests per minute."
+     }
+    ],
+    "terms": [
+     "Serverless Inference traffic may be served from any Crusoe Cloud location",
+     "Using managed inference requires enabling billing with a valid non-prepaid credit card"
+    ]
+   }
+  },
+  {
+   "id": "ctyun",
+   "name": "China Telecom eSurfing Cloud (TokenHub)",
+   "name_zh": "天翼云 星辰TokenHub",
+   "homepage": "https://www.ctyun.cn/products/maas",
+   "region": "cn",
+   "api_usable": true,
+   "status": "verified",
+   "last_verified": "2026-11-25",
+   "summary": "天翼云星辰TokenHub 部分模型提供免费体验额度，额度数量因模型而异、有效期 2 周；官网另有“50万Tokens免费领取”活动。完成实名认证后可用 OpenAI 兼容接口调用，免费额度用完后默认转按量计费。",
+   "api": {
+    "protocol": [
+     "openai",
+     "anthropic"
+    ],
+    "base_url": "https://ai.ctaigw.cn/v1",
+    "models_access": "paid"
+   },
+   "signup": {
+    "url": "https://www.ctyun.cn",
+    "requires": [
+     "phone",
+     "real_name"
+    ],
+    "notes": "需完成个人实名认证或企业认证；需由主账号在“在线推理”中开启服务，并在 APP Key 管理中创建服务组以获取 App Key"
+   },
+   "quotas": [
+    {
+     "unit": "tokens",
+     "amount": 500000,
+     "period": "one-time",
+     "scope": "account",
+     "evidence": "https://www.ctyun.cn",
+     "quote": "星辰50万Tokens免费领取",
+     "note": "首页活动入口写明可免费领取 50 万 Tokens，适用模型、有效期和领取条件页面未写明"
+    },
+    {
+     "unit": "tokens",
+     "amount": null,
+     "period": "one-time",
+     "scope": "model",
+     "expires_days": 14,
+     "models": "部分模型（以控制台“开启免费体验”弹窗为准）",
+     "evidence": "https://www.ctyun.cn/document/11061839/11062238",
+     "quote": "有效期触发：主账号任一账号首次使用模型服务即启动2周有效期倒计时。",
+     "note": "每个模型的免费额度不等，官方文档未公布具体数值；主/子账号共用；不能与已购 Tokens 量包同时使用；用完或到期后若未勾选自动关闭服务，将转按量计费"
+    }
+   ],
+   "overage": "auto_paid",
+   "onboarding": {
+    "level": "L3",
+    "key_page": "https://ctxirang.ctyun.cn/maas/service/serviceGroup"
+   },
+   "terms": [
+    {
+     "point": "免费体验额度由主账号和子账号共用，不支持主账号向子账号分配额度",
+     "url": "https://www.ctyun.cn/document/11061839/11062238"
+    },
+    {
+     "point": "官方提示妥善保管 App Key，避免公开共享",
+     "url": "https://www.ctyun.cn/document/11061839/11062271"
+    },
+    {
+     "point": "免费额度用完后自动转按需计费，需在开启免费体验时勾选“免费额度耗尽或到期后，自动关闭服务”以避免扣费",
+     "url": "https://www.ctyun.cn/document/11061839/11062271"
+    }
+   ],
+   "tags": [
+    "试用"
+   ],
+   "sources": [
+    "https://www.ctyun.cn",
+    "https://www.ctyun.cn/document/11061839/11062238",
+    "https://www.ctyun.cn/document/11061839/11062271",
+    "https://www.ctyun.cn/document/11061839/11062267",
+    "https://www.ctyun.cn/document/11061839/11062312"
+   ],
+   "en": {
+    "summary": "China Telecom eSurfing Cloud's TokenHub gives some models a free trial quota that varies by model and lasts 2 weeks; the homepage also advertises 500,000 free tokens. After identity verification it can be called through an OpenAI-compatible API, and usage switches to pay-as-you-go by default once the free quota runs out.",
+    "signup_notes": "Personal or company identity verification is required; the main account must enable the service under Online Inference and create a service group under APP Key management to get an App Key",
+    "tags": [
+     "Trial"
+    ],
+    "quotas": [
+     {
+      "note": "The homepage promotion says 500,000 tokens can be claimed for free; applicable models, validity and conditions are not stated"
+     },
+     {
+      "models": "Some models (see the \"start free trial\" dialog in the console)",
+      "note": "The free quota differs per model and the docs do not publish the amounts; shared by main and sub-accounts; cannot be used at the same time as a purchased token pack; after it runs out or expires, usage is billed pay-as-you-go unless auto-stop was ticked"
+     }
+    ],
+    "terms": [
+     "The free trial quota is shared by the main account and sub-accounts and cannot be allocated to sub-accounts",
+     "The provider asks you to keep the App Key safe and not share it publicly",
+     "When the free quota runs out, billing switches to pay-as-you-go; tick \"stop the service automatically when the free quota is used up or expires\" to avoid charges"
     ]
    }
   },
@@ -1272,7 +2035,7 @@
    "region": "cn",
    "api_usable": true,
    "status": "unconfirmed",
-   "last_verified": "2026-11-22",
+   "last_verified": "2026-11-26",
    "summary": "官方价格页提到\"赠送余额\"可用于抵扣模型费用，但未公布具体金额；平台页需登录，无法核实注册赠送额度。",
    "api": {
     "protocol": [
@@ -1333,6 +2096,131 @@
     ],
     "terms": [
      "Model fees are deducted from the topped-up balance or granted balance, preferring the granted balance first"
+    ]
+   }
+  },
+  {
+   "id": "dgrid",
+   "name": "DGrid AI",
+   "homepage": "https://dgrid.ai",
+   "region": "global",
+   "api_usable": true,
+   "status": "verified",
+   "last_verified": "2026-11-26",
+   "summary": "去中心化 AI 网关，免费模型路由 dgridai/free 不收费，未充值账号每天 100 次、每分钟 10 次；累计充值满 5 美元后为每天 1000 次、每分钟 20 次。",
+   "api": {
+    "protocol": [
+     "openai",
+     "anthropic",
+     "gemini"
+    ],
+    "base_url": "https://api.dgrid.ai/v1",
+    "models_access": "paid",
+    "free_models": [
+     "dgridai/free"
+    ]
+   },
+   "signup": {
+    "url": "https://dgrid.ai/api-keys",
+    "requires": [],
+    "notes": "官方博客的 Key 创建教程写明需连接加密钱包登录；官方列出了可使用商业 API 的国家和地区名单，中国大陆不在名单内。"
+   },
+   "quotas": [
+    {
+     "unit": "requests",
+     "amount": 100,
+     "period": "day",
+     "scope": "account",
+     "models": "dgridai/free",
+     "condition": "累计有效充值不足 5 美元的账号",
+     "note": "免费路由会把请求转到不同的后端模型，具体模型不固定；重置时间未写明",
+     "evidence": "https://docs.dgrid.ai/ai-gateway/free-models-router.md",
+     "quote": "Limits are enforced per account."
+    },
+    {
+     "unit": "requests",
+     "amount": 10,
+     "period": "minute",
+     "scope": "account",
+     "models": "dgridai/free",
+     "condition": "累计有效充值不足 5 美元的账号",
+     "evidence": "https://docs.dgrid.ai/ai-gateway/free-models-router.md",
+     "quote": "Limits are enforced per account."
+    },
+    {
+     "unit": "requests",
+     "amount": 1000,
+     "period": "day",
+     "scope": "account",
+     "models": "dgridai/free",
+     "condition": "累计有效充值满 5 美元的账号（另限每分钟 20 次）",
+     "evidence": "https://docs.dgrid.ai/ai-gateway/free-models-router.md",
+     "quote": "A qualifying top-up is a direct addition of funds to the account balance and is used to determine whether the account meets the `$5` threshold."
+    }
+   ],
+   "overage": "blocked",
+   "expires": null,
+   "onboarding": {
+    "level": "L2",
+    "key_page": "https://dgrid.ai/api-keys"
+   },
+   "terms": [
+    {
+     "point": "禁止绕过速率限制、访问控制或地区限制",
+     "url": "https://docs.dgrid.ai/ai-gateway/terms-of-service.md"
+    },
+    {
+     "point": "API 凭证不得共享、公开或转售；未经书面许可不得转售或向第三方提供访问",
+     "url": "https://docs.dgrid.ai/ai-gateway/terms-of-service.md"
+    },
+    {
+     "point": "DGrid 可在提供、维护和改进服务所需范围内处理用户提交的内容",
+     "url": "https://docs.dgrid.ai/ai-gateway/terms-of-service.md"
+    },
+    {
+     "point": "仅在官方列出的国家和地区提供商业 API 访问，不得从受限地区绕过地域控制使用",
+     "url": "https://docs.dgrid.ai/ai-gateway/supported-regions.md"
+    }
+   ],
+   "tags": [
+    "聚合",
+    "免费模型"
+   ],
+   "sources": [
+    "https://docs.dgrid.ai/ai-gateway/free-models-router.md",
+    "https://dgrid.ai/models/dgridai/free",
+    "https://docs.dgrid.ai/quickstart.md",
+    "https://blog.dgrid.ai/posts/2026-01-04/",
+    "https://docs.dgrid.ai/ai-gateway/terms-of-service.md",
+    "https://docs.dgrid.ai/ai-gateway/supported-regions.md"
+   ],
+   "en": {
+    "summary": "Decentralized AI gateway; the free models router dgridai/free costs nothing, 100 requests per day and 10 per minute for accounts without top-ups, 1,000 per day and 20 per minute after $5 in total top-ups.",
+    "signup_notes": "The official blog's key guide says you sign in by connecting a crypto wallet; the official list of supported countries and regions for commercial API access does not include mainland China.",
+    "tags": [
+     "Aggregator",
+     "Free model"
+    ],
+    "quotas": [
+     {
+      "models": "dgridai/free",
+      "condition": "Accounts with less than $5 in qualifying top-ups",
+      "note": "The free router sends requests to varying backend models; reset time not stated"
+     },
+     {
+      "models": "dgridai/free",
+      "condition": "Accounts with less than $5 in qualifying top-ups"
+     },
+     {
+      "models": "dgridai/free",
+      "condition": "Accounts with at least $5 in qualifying top-ups (also 20 per minute)"
+     }
+    ],
+    "terms": [
+     "Bypassing rate limits, access controls or geographic restrictions is prohibited",
+     "API credentials must not be shared, exposed or resold; reselling or giving third parties access needs written permission",
+     "DGrid may process submitted content as needed to provide, maintain and improve the service",
+     "Commercial API access is offered only in the listed countries and regions; bypassing geographic controls from restricted regions is prohibited"
     ]
    }
   },
@@ -1442,13 +2330,143 @@
    }
   },
   {
+   "id": "electronhub",
+   "name": "Electron Hub",
+   "homepage": "https://www.electronhub.ai",
+   "region": "global",
+   "api_usable": true,
+   "status": "verified",
+   "last_verified": "2026-11-26",
+   "summary": "聚合网关，免费计划每周补到 0.25 美元额度，另有每天 10 次免费模型（:free 后缀）请求，看广告最多可增至每天 200 次；免费计划每分钟 5 次请求。",
+   "api": {
+    "protocol": [
+     "openai",
+     "anthropic"
+    ],
+    "base_url": "https://api.electronhub.ai/v1",
+    "models_url": "https://api.electronhub.ai/v1/models",
+    "models_access": "paid",
+    "free_pattern": ":free$",
+    "free_model_rule": "以 :free 结尾的模型消耗 Neutrinos，不扣额度；每周 0.25 美元额度可用于不需订阅的 freemium 模型，Pro 模型需付费计划或按量充值。"
+   },
+   "signup": {
+    "url": "https://app.electronhub.ai",
+    "requires": [
+     "google"
+    ],
+    "min_age": 18,
+    "notes": "用 Google 或 Discord 账号登录；部分功能需验证邮箱、手机号或 Discord 账号；免费计划不需要信用卡。"
+   },
+   "quotas": [
+    {
+     "unit": "usd",
+     "amount": 0.25,
+     "period": "week",
+     "reset": "Sunday 21:00 UTC",
+     "scope": "account",
+     "models": "不需订阅的 freemium 模型",
+     "note": "每周日补到 0.25 美元，不累加；官方公告 2027-01-03 调整价格时免费计划的每周 0.25 美元不变",
+     "evidence": "https://electronhub.ai/pricing",
+     "quote": "Start free with $0.25 of weekly credits and no card."
+    },
+    {
+     "unit": "requests",
+     "amount": 10,
+     "period": "day",
+     "reset": "21:00 UTC",
+     "scope": "account",
+     "models": "以 :free 结尾的免费模型",
+     "note": "以 Neutrinos 计，每次请求 1 个；未用完不结转；官方不承诺免费模型可用，提供方可能用提示词训练",
+     "evidence": "https://docs.electronhub.ai/billing/credits.md",
+     "quote": "All users get **10 Neutrinos per day** (resets at 21:00 UTC)"
+    },
+    {
+     "unit": "requests",
+     "amount": 200,
+     "period": "day",
+     "reset": "21:00 UTC",
+     "scope": "account",
+     "models": "以 :free 结尾的免费模型",
+     "condition": "免费计划需每天观看最多 3 个广告（10 → 40 → 100 → 200）",
+     "evidence": "https://docs.electronhub.ai/billing/credits.md",
+     "quote": "You can earn more Neutrinos by watching ads (up to **200 daily**)"
+    }
+   ],
+   "overage": "blocked",
+   "expires": null,
+   "onboarding": {
+    "level": "L2",
+    "key_page": "https://app.electronhub.ai"
+   },
+   "terms": [
+    {
+     "point": "每人只能有一个账号，禁止用多个账号获取更多免费额度、Neutrinos 或奖励（2.3）",
+     "url": "https://tos.electronhub.ai/"
+    },
+    {
+     "point": "禁止出售、出借或公开账号与 Key，不得转售服务（4.3）",
+     "url": "https://tos.electronhub.ai/"
+    },
+    {
+     "point": "须年满 18 岁；受全面制裁地区不可用，不得用 VPN 或代理绕过地区限制（2.1、2.2）",
+     "url": "https://tos.electronhub.ai/"
+    },
+    {
+     "point": ":free 和实验模型的第三方提供方可能用提示词和输出训练模型",
+     "url": "https://docs.electronhub.ai/billing/privacy-security.md"
+    }
+   ],
+   "tags": [
+    "聚合",
+    "免费模型",
+    "每日赠送"
+   ],
+   "sources": [
+    "https://electronhub.ai/pricing",
+    "https://docs.electronhub.ai/billing/credits.md",
+    "https://docs.electronhub.ai/billing/model-access.md",
+    "https://docs.electronhub.ai/getting-started/rate-limits.md",
+    "https://tos.electronhub.ai/"
+   ],
+   "en": {
+    "summary": "Aggregator gateway; the free plan is topped up to $0.25 of credits each week, plus 10 free-model (:free suffix) requests a day, up to 200 a day by watching ads; 5 requests per minute on the free plan.",
+    "signup_notes": "Sign in with Google or Discord; some features need a verified email, phone number or Discord account; no credit card for the free plan.",
+    "free_model_rule": "Models ending in :free use Neutrinos instead of credits; the $0.25 weekly credit works on freemium models that need no subscription; Pro models need a paid plan or pay-as-you-go credits.",
+    "tags": [
+     "Aggregator",
+     "Free model",
+     "Daily credits"
+    ],
+    "quotas": [
+     {
+      "models": "Freemium models that need no subscription",
+      "note": "Topped up to $0.25 every Sunday, not added on top; the announced January 3, 2027 pricing change leaves the Free plan's $0.25 a week unchanged"
+     },
+     {
+      "models": "Free models ending in :free",
+      "note": "Counted in Neutrinos, one per request; unused ones do not carry over; free models have no uptime commitment and their providers may train on prompts"
+     },
+     {
+      "models": "Free models ending in :free",
+      "condition": "On the free plan, by watching up to 3 ads a day (10 → 40 → 100 → 200)"
+     }
+    ],
+    "terms": [
+     "One account per person; multiple accounts to get more free allowances, Neutrinos or rewards are prohibited (2.3)",
+     "Selling, lending or publishing accounts and keys, or reselling the service, is prohibited (4.3)",
+     "Must be 18 or older; unavailable in comprehensively sanctioned regions, and VPNs or proxies may not be used to get around regional limits (2.1, 2.2)",
+     "Third-party providers of :free and experimental models may train on prompts and outputs"
+    ]
+   }
+  },
+  {
    "id": "experiential-labs",
    "name": "Experiential Labs",
    "homepage": "https://www.experientiallabs.ai",
    "region": "global",
    "api_usable": true,
    "status": "verified",
-   "last_verified": "2026-11-22",
+   "last_verified": "2026-11-23",
    "summary": "开源 AI 网关的托管服务，免费计划每天可用 100 万 token 调用 GPT-6 Luna 和 DeepSeek V4.1 Flash，UTC 零点重置，需先做信用卡验证。",
    "api": {
     "protocol": [
@@ -1480,7 +2498,8 @@
      "scope": "account",
      "models": "gpt-6-luna、deepseek-v4.1-flash 和 Clef 决策接口合计",
      "note": "输入和输出 token 合计；超出返回 429",
-     "evidence": "https://www.experientiallabs.ai/pricing"
+     "evidence": "https://www.experientiallabs.ai/pricing",
+     "quote": "Free core models share one pool of 10 RPM, 250K TPM and 1M input and output tokens a day, reset at 00:00 UTC."
     },
     {
      "unit": "requests",
@@ -1488,7 +2507,8 @@
      "period": "minute",
      "scope": "account",
      "models": "免费核心模型合计",
-     "evidence": "https://www.experientiallabs.ai/pricing"
+     "evidence": "https://www.experientiallabs.ai/pricing",
+     "quote": "Free core models share one pool of 10 RPM, 250K TPM and 1M input and output tokens a day, reset at 00:00 UTC."
     },
     {
      "unit": "tokens",
@@ -1496,7 +2516,8 @@
      "period": "minute",
      "scope": "account",
      "models": "免费核心模型合计",
-     "evidence": "https://www.experientiallabs.ai/pricing"
+     "evidence": "https://www.experientiallabs.ai/pricing",
+     "quote": "Free core models share one pool of 10 RPM, 250K TPM and 1M input and output tokens a day, reset at 00:00 UTC."
     }
    ],
    "overage": "blocked",
@@ -1765,6 +2786,109 @@
    }
   },
   {
+   "id": "gizmo",
+   "name": "Gizmo",
+   "homepage": "https://gizmoplatforms.com/developers",
+   "region": "global",
+   "api_usable": true,
+   "status": "unconfirmed",
+   "last_verified": "2026-11-25",
+   "summary": "模型聚合 API，免费账号无需信用卡，可调用标为 free 的少数模型，按月有免费模型请求额度，具体次数官方未公布；其余模型按量付费。",
+   "api": {
+    "protocol": [
+     "openai"
+    ],
+    "base_url": "https://api.gizmoplatforms.com/api/v1",
+    "models_access": "paid",
+    "free_model_rule": "模型列表中名称带 (free)、价格为 $0 / $0 的模型免费，例如 Nemotron 3.5 Lightning (free)、Nemotron 3 Ultra (free)、Flint (free)、Ling 3.2 Flash (free)、LFM3-1.7B (free)、ERNIE-5.5-Flash-Preview (free)、Particle-1 (free)；准确的模型 ID 需用 Key 调用 /api/v1/models 查看。"
+   },
+   "signup": {
+    "url": "https://gizmoplatforms.com/signup",
+    "requires": [],
+    "notes": "注册页写明免费开始、无需信用卡；付费模型需要绑卡并充值。"
+   },
+   "quotas": [
+    {
+     "unit": "requests",
+     "amount": null,
+     "period": "month",
+     "scope": "account",
+     "models": "标为 free 的模型合计",
+     "note": "文档提到每月免费模型额度，但未公布具体次数。服务条款写的是使用服务需要付费月度计划，与价格页和注册页的免费开始说法不一致，按保守处理为未确认。",
+     "evidence": "https://gizmoplatforms.com/developers",
+     "quote": "each admitted free-model backend pass counts against the monthly free-model quota."
+    },
+    {
+     "unit": "requests",
+     "amount": null,
+     "period": "month",
+     "scope": "account",
+     "models": "Recursive Flint (free)",
+     "note": "模型页标价 $0 / $0，写明在计划限制内免费，限制数值未公布。",
+     "evidence": "https://gizmoplatforms.com/models/recursive",
+     "quote": "1 Recursive model on Gizmo, all open-weight, 1 free within plan limits, up to 262k tokens of context."
+    }
+   ],
+   "overage": "blocked",
+   "expires": null,
+   "onboarding": {
+    "level": "L2"
+   },
+   "terms": [
+    {
+     "point": "服务条款（2026-08-24 更新）写明使用服务需要付费月度计划，与价格页的免费方案说法不一致。",
+     "url": "https://gizmoplatforms.com/terms"
+    },
+    {
+     "point": "付费套餐按周提供包含用量，超出部分从预付余额扣除，可开启自动充值。",
+     "url": "https://gizmoplatforms.com/terms"
+    },
+    {
+     "point": "账号下所有 Key 共享余额和限制；不要把 Key 放在公开网页或移动应用中。",
+     "url": "https://gizmoplatforms.com/developers"
+    }
+   ],
+   "tags": [
+    "聚合",
+    "免费模型",
+    "每月赠送"
+   ],
+   "sources": [
+    "https://gizmoplatforms.com/developers",
+    "https://gizmoplatforms.com/pricing",
+    "https://gizmoplatforms.com/models",
+    "https://gizmoplatforms.com/models/recursive",
+    "https://gizmoplatforms.com/models/nvidia",
+    "https://gizmoplatforms.com/signup",
+    "https://gizmoplatforms.com/terms"
+   ],
+   "en": {
+    "summary": "Model aggregator API; free accounts need no credit card and can call a few models marked free, with a monthly free-model request quota whose size is not published; other models are pay as you go.",
+    "signup_notes": "The sign-up page says it is free to start with no card needed; paid models require a card and credits.",
+    "free_model_rule": "Models whose names end in (free) and are priced $0 / $0 are free, e.g. Nemotron 3.5 Lightning (free), Nemotron 3 Ultra (free), Flint (free), Ling 3.2 Flash (free), LFM3-1.7B (free), ERNIE-5.5-Flash-Preview (free), Particle-1 (free); exact model IDs are listed by /api/v1/models with a key.",
+    "tags": [
+     "Aggregator",
+     "Free model",
+     "Monthly credit"
+    ],
+    "quotas": [
+     {
+      "models": "All models marked free combined",
+      "note": "The docs mention a monthly free-model quota but do not publish the number. The Terms of Service say access requires a paid monthly plan, which conflicts with the free start on the pricing and sign-up pages, so this is kept as unconfirmed."
+     },
+     {
+      "models": "Recursive Flint (free)",
+      "note": "The model page lists $0 / $0 and says it is free within plan limits; the limit is not published."
+     }
+    ],
+    "terms": [
+     "The Terms of Service (updated 2026-08-24) say access requires a paid monthly plan, which conflicts with the free plan on the pricing page.",
+     "Paid plans include weekly usage; usage beyond it draws from prepaid credits, with optional auto-refill.",
+     "All keys on an account share its balance and limits; do not put keys in public websites or mobile apps."
+    ]
+   }
+  },
+  {
    "id": "gonka-broker",
    "name": "Gonka Broker",
    "homepage": "https://gonkabroker.com",
@@ -1959,7 +3083,7 @@
    "region": "global",
    "api_usable": true,
    "status": "verified",
-   "last_verified": "2026-11-19",
+   "last_verified": "2026-11-27",
    "summary": "Gemini API 免费档，按项目限速；具体数值在 AI Studio 页面显示。",
    "api": {
     "protocol": [
@@ -1990,7 +3114,8 @@
      "scope": "project",
      "evidence": "https://aistudio.google.com/docs/rate-limits",
      "reset": "00:00 America/Los_Angeles",
-     "note": "另有每分钟请求数、每分钟 token 数限制；具体数值按模型在 AI Studio 显示"
+     "note": "另有每分钟请求数、每分钟 token 数限制；具体数值按模型在 AI Studio 显示",
+     "quote": "Rate limits are applied per project, not per API key."
     }
    ],
    "overage": "blocked",
@@ -2036,7 +3161,7 @@
    "region": "global",
    "api_usable": true,
    "status": "verified",
-   "last_verified": "2026-11-19",
+   "last_verified": "2026-11-23",
    "summary": "免费档按组织限速，响应头返回剩余额度。",
    "api": {
     "protocol": [
@@ -2059,7 +3184,8 @@
      "period": "day",
      "scope": "org",
      "evidence": "https://console.groq.com/docs/rate-limits",
-     "note": "另有每分钟请求数、每分钟/每天 token 数；数值见控制台 Limits 页"
+     "note": "另有每分钟请求数、每分钟/每天 token 数；数值见控制台 Limits 页",
+     "quote": "Rate limits apply at the organization level, not individual users."
     }
    ],
    "overage": "blocked",
@@ -2742,6 +3868,216 @@
    }
   },
   {
+   "id": "jamai-base",
+   "name": "JamAI Base",
+   "homepage": "https://www.jamaibase.com",
+   "region": "global",
+   "api_usable": true,
+   "status": "verified",
+   "last_verified": "2026-11-25",
+   "summary": "EmbeddedLLM 的 AI 后端平台，免费计划每月含 300 万 Token 可用于 ELLM 托管模型（输入加输出合计），无需信用卡；其他厂商模型按价格表付费。",
+   "api": {
+    "protocol": [
+     "openai"
+    ],
+    "base_url": "https://api.jamaibase.com/api/v1",
+    "models_access": "paid"
+   },
+   "signup": {
+    "url": "https://cloud.jamaibase.com",
+    "requires": [
+     "email"
+    ],
+    "notes": "官网写明免费试用无需信用卡。API 使用个人访问令牌（PAT）以 Bearer 方式认证；创建 PAT 时绑定项目可省去 X-PROJECT-ID 请求头。聊天接口路径 /api/v1/chat/completions 来自官方 SDK 源码，官方文档未明确说明与 OpenAI 客户端完全兼容。"
+   },
+   "quotas": [
+    {
+     "unit": "tokens",
+     "amount": 3000000,
+     "period": "month",
+     "scope": "org",
+     "models": "ELLM 托管模型",
+     "condition": "Free 计划（$0/月，1 名成员）",
+     "evidence": "https://www.jamaibase.com/pricing",
+     "quote": "3 M Tokens for ELLM-hosted models",
+     "note": "输入加输出合计；免费计划每月 credit 赠送为 $0，其他厂商模型需付费；未用完的免费额度不结转到下月；具体哪些模型 ID 属于 ELLM 托管未逐一列出；重置时间未写明"
+    }
+   ],
+   "overage": "unknown",
+   "onboarding": {
+    "level": "L2",
+    "key_page": "https://cloud.jamaibase.com/settings/account"
+   },
+   "terms": [
+    {
+     "point": "未用完的免费额度不会结转到下个月",
+     "url": "https://www.jamaibase.com/pricing"
+    }
+   ],
+   "tags": [
+    "每月赠送"
+   ],
+   "sources": [
+    "https://www.jamaibase.com/pricing",
+    "https://docs.jamaibase.com/developer-reference/openapi-documentation/making-your-first-api-request.md",
+    "https://docs.jamaibase.com/introducing-jamai-base-v2/new-features-and-required-actions.md",
+    "https://docs.jamaibase.com/developer-reference/typescript-sdk-documentation.md"
+   ],
+   "en": {
+    "summary": "EmbeddedLLM's AI backend platform; the free plan includes 3M tokens per month for ELLM-hosted models (input plus output), no credit card needed; other providers' models are paid per the price list.",
+    "signup_notes": "The site states the free trial needs no credit card. The API uses a Personal Access Token (PAT) as a Bearer token; linking the PAT to a project lets you omit the X-PROJECT-ID header. The chat path /api/v1/chat/completions comes from the official SDK source; the docs do not explicitly state full OpenAI client compatibility.",
+    "tags": [
+     "Monthly credits"
+    ],
+    "quotas": [
+     {
+      "models": "ELLM-hosted models",
+      "condition": "Free plan ($0/month, 1 team member)",
+      "note": "Input plus output combined; the free plan's monthly credit grant is $0, so other providers' models are paid; unused free credits do not carry over; the exact ELLM-hosted model IDs are not listed; reset time not stated"
+     }
+    ],
+    "terms": [
+     "Unused free credits do not carry over to the next month"
+    ]
+   }
+  },
+  {
+   "id": "kenari",
+   "name": "Kenari",
+   "homepage": "https://kenari.id",
+   "region": "global",
+   "api_usable": true,
+   "status": "verified",
+   "last_verified": "2026-11-25",
+   "summary": "印尼的模型聚合网关，ID 以 :free 结尾的模型不收费，未充值账号每天 50 次、每分钟 5 次，余额为零也能调用。",
+   "api": {
+    "protocol": [
+     "openai",
+     "anthropic"
+    ],
+    "base_url": "https://kenari.id/v1",
+    "anthropic_base_url": "https://kenari.id",
+    "models_url": "https://kenari.id/v1/models",
+    "models_access": "paid",
+    "free_pattern": ":free$",
+    "free_model_rule": "模型 ID 以 :free 结尾的免费；也可用内置路由 kenari-free 随机选一个免费模型。免费模型会随时间变化，以 /v1/models 中 pricing.free 为准。"
+   },
+   "signup": {
+    "url": "https://kenari.id/login",
+    "requires": [
+     "email"
+    ],
+    "notes": "邮箱或 Google 账号注册；免费模型不需要充值。付费模型用印尼 QRIS 或加密货币充值，以印尼盾计费。"
+   },
+   "quotas": [
+    {
+     "unit": "requests",
+     "amount": 50,
+     "period": "day",
+     "reset": "00:00 UTC",
+     "scope": "account",
+     "models": "全部 :free 模型合计",
+     "condition": "未充值账号",
+     "note": "只计成功的请求；单个模型可能另有每分钟、每日、并发或总 token 限制；官方说明免费模型尽力提供，数值可能调整",
+     "evidence": "https://kenari.id",
+     "quote": "Tanpa top up: 50 request per hari, 5 request per menit."
+    },
+    {
+     "unit": "requests",
+     "amount": 5,
+     "period": "minute",
+     "scope": "account",
+     "models": "全部 :free 模型合计",
+     "condition": "未充值账号",
+     "evidence": "https://kenari.id",
+     "quote": "Tanpa top up: 50 request per hari, 5 request per menit."
+    },
+    {
+     "unit": "requests",
+     "amount": 1000,
+     "period": "day",
+     "reset": "00:00 UTC",
+     "scope": "account",
+     "models": "全部 :free 模型合计",
+     "condition": "累计充值满 1 万印尼盾（另限每分钟 10 次）",
+     "note": "赠送码得到的余额不计入充值门槛",
+     "evidence": "https://kenari.id",
+     "quote": "Sudah top up Rp 10.000: 1.000 request per hari, 10 request per menit."
+    }
+   ],
+   "overage": "blocked",
+   "expires": null,
+   "onboarding": {
+    "level": "L2",
+    "key_page": "https://kenari.id/login",
+    "key_pattern": "^kn-"
+   },
+   "terms": [
+    {
+     "point": "未经书面协议，不得违反条款转售访问权限（第 3 条）",
+     "url": "https://kenari.id/terms"
+    },
+    {
+     "point": "不得违反各模型提供方的使用政策；违反第 3 条可被立即停用账号",
+     "url": "https://kenari.id/terms"
+    },
+    {
+     "point": "请求内容会转发给所选模型的提供方，按其隐私政策处理；Kenari 只保存用量元数据，不保存提示词和回复",
+     "url": "https://kenari.id/privacy"
+    },
+    {
+     "point": "注册和登录用 Cloudflare Turnstile 拦截自动注册",
+     "url": "https://kenari.id/privacy"
+    }
+   ],
+   "tags": [
+    "聚合",
+    "免费模型",
+    "每日赠送"
+   ],
+   "sources": [
+    "https://kenari.id",
+    "https://kenari.id/en/docs/free-models",
+    "https://kenari.id/en/docs/rate-limits",
+    "https://kenari.id/en/docs/quickstart",
+    "https://kenari.id/api/public/pricing",
+    "https://kenari.id/terms",
+    "https://kenari.id/privacy"
+   ],
+   "en": {
+    "summary": "Indonesian model gateway; models whose id ends in :free cost nothing, 50 requests a day and 5 a minute for accounts that have not topped up, usable with a zero balance.",
+    "signup_notes": "Sign up with email or Google; free models need no top up. Paid models are billed in Rupiah and topped up via Indonesian QRIS or crypto.",
+    "free_model_rule": "Model ids ending in :free are free; the built-in kenari-free route picks a free model at random. The free models change over time; check pricing.free in /v1/models.",
+    "tags": [
+     "Aggregator",
+     "Free model",
+     "Daily credits"
+    ],
+    "quotas": [
+     {
+      "models": "All :free models combined",
+      "condition": "Accounts that have not topped up",
+      "note": "Only successful requests count; a single model may carry its own per-minute, daily, concurrency or token-budget limit; free models are best effort and the numbers can change"
+     },
+     {
+      "models": "All :free models combined",
+      "condition": "Accounts that have not topped up"
+     },
+     {
+      "models": "All :free models combined",
+      "condition": "After top ups totalling Rp 10,000 (also 10 per minute)",
+      "note": "Bonus balance from codes does not count toward the threshold"
+     }
+    ],
+    "terms": [
+     "Reselling access in breach of the terms without a written agreement is prohibited (section 3)",
+     "Model providers' usage policies must be followed; breaches of section 3 can lead to immediate suspension",
+     "Request content is forwarded to the chosen model provider under its own privacy policy; Kenari keeps usage metadata only, not prompts or responses",
+     "Sign-up and sign-in use Cloudflare Turnstile to block automated sign-ups"
+    ]
+   }
+  },
+  {
    "id": "kilo-code",
    "name": "Kilo AI Gateway",
    "name_zh": "Kilo Code 模型网关",
@@ -3128,6 +4464,351 @@
    }
   },
   {
+   "id": "logfare",
+   "name": "Logfare",
+   "homepage": "https://logfare.ai",
+   "region": "global",
+   "api_usable": true,
+   "status": "verified",
+   "last_verified": "2026-11-25",
+   "summary": "免费 LLM 推理网关，注册账号即可用 API Key 调用标准档模型，普通账号每天 2,500 次请求；所有请求都会被记录，用于内部评测数据集。",
+   "api": {
+    "protocol": [
+     "openai",
+     "anthropic"
+    ],
+    "base_url": "https://logfare.ai/v1",
+    "anthropic_base_url": "https://logfare.ai",
+    "models_url": "https://logfare.ai/v1/models",
+    "models_access": "free",
+    "free_model_rule": "三档模型均免费：标准档（tier 1）注册即可用；高级档需在 /consent 同意数据用于模型训练；Pro 档还需同意出售数据。可用 logfare/auto 自动路由。仅限网页聊天（chat_only）的模型不能用 API 调用。"
+   },
+   "signup": {
+    "url": "https://logfare.ai/register",
+    "requires": [],
+    "min_age": 18,
+    "notes": "用户名加密码注册，不需要邮箱；必须用 Discord 账号验证并保持在 Logfare 的 Discord 服务器内，每个 Discord 账号只能绑定一个 Logfare 账号。"
+   },
+   "quotas": [
+    {
+     "unit": "requests",
+     "amount": 2500,
+     "period": "day",
+     "reset": "00:00 UTC",
+     "scope": "account",
+     "models": "所有已解锁模型合计",
+     "condition": "普通账号（注册满 24 小时后）",
+     "note": "同时限每分钟 20 次、每小时 500 次、并发 3；标为 Request-limit exempt 的模型不计入。同一 IP 另有共享上限（每天 40,000 次）。",
+     "evidence": "https://logfare.ai/docs",
+     "quote": "2,500 requests per day"
+    },
+    {
+     "unit": "requests",
+     "amount": 500,
+     "period": "day",
+     "reset": "00:00 UTC",
+     "scope": "account",
+     "models": "所有已解锁模型合计",
+     "condition": "注册后前 24 小时",
+     "note": "同时限每分钟 10 次、每小时 200 次、并发 1。",
+     "new_users": true,
+     "evidence": "https://logfare.ai/docs",
+     "quote": "New accounts use the new-account budget for their first 24 hours."
+    },
+    {
+     "unit": "requests",
+     "amount": 5000,
+     "period": "day",
+     "reset": "00:00 UTC",
+     "scope": "account",
+     "models": "所有已解锁模型合计",
+     "condition": "同意数据用于模型训练的高级账号",
+     "note": "同时限每分钟 40 次、每小时 1,000 次、并发 6。另同意出售数据的 Pro 账号为每天 10,000 次。",
+     "evidence": "https://logfare.ai/docs",
+     "quote": "5,000 requests per day"
+    }
+   ],
+   "overage": "blocked",
+   "expires": null,
+   "onboarding": {
+    "level": "L2"
+   },
+   "terms": [
+    {
+     "point": "所有请求（提示词、回复和元数据）都会被记录，经过自动去除个人信息后可用于内部评测数据集，可在 /consent 退出评测用途",
+     "url": "https://logfare.ai/tos"
+    },
+    {
+     "point": "高级档模型需同意数据用于模型训练，Pro 档还需同意将数据出售或授权给第三方",
+     "url": "https://logfare.ai/tos"
+    },
+    {
+     "point": "每人只能有一个账号，禁止用多个账号、他人账号或轮换 Key、Discord 账号、IP 绕过限制",
+     "url": "https://logfare.ai/tos"
+    },
+    {
+     "point": "不得把 API Key 分享给未授权的第三方",
+     "url": "https://logfare.ai/tos"
+    },
+    {
+     "point": "允许在限额内自动化使用；收到 429 或 503 后须按 Retry-After 等待再重试",
+     "url": "https://logfare.ai/tos"
+    },
+    {
+     "point": "官方不承诺在线时间，服务和具体模型可随时变更或停止",
+     "url": "https://logfare.ai/tos"
+    }
+   ],
+   "tags": [
+    "永久免费",
+    "免费模型",
+    "每日赠送"
+   ],
+   "sources": [
+    "https://logfare.ai",
+    "https://logfare.ai/docs",
+    "https://logfare.ai/register",
+    "https://logfare.ai/tos",
+    "https://logfare.ai/privacy"
+   ],
+   "en": {
+    "summary": "Free LLM inference gateway; a registered account gets an API key for the standard-tier models, 2,500 requests per day on a regular account; every request is logged and used for internal evaluation datasets.",
+    "signup_notes": "Sign up with a username and password, no email needed; Discord verification is required and the Discord account must stay in the Logfare server; one Logfare account per Discord account.",
+    "free_model_rule": "All three tiers are free. Standard (tier 1) models work after sign-up; Premium needs opting in to model training at /consent; Pro also needs opting in to data sale. logfare/auto routes automatically. Chat-only models cannot be used through the API.",
+    "tags": [
+     "Free forever",
+     "Free model",
+     "Daily credits"
+    ],
+    "quotas": [
+     {
+      "models": "All unlocked models combined",
+      "condition": "Regular account (after the first 24 hours)",
+      "note": "Also 20 per minute, 500 per hour, 3 concurrent; models marked Request-limit exempt do not count. A shared per-IP limit also applies (40,000 per day)."
+     },
+     {
+      "models": "All unlocked models combined",
+      "condition": "First 24 hours after sign-up",
+      "note": "Also 10 per minute, 200 per hour, 1 concurrent."
+     },
+     {
+      "models": "All unlocked models combined",
+      "condition": "Premium account (opted in to model training)",
+      "note": "Also 40 per minute, 1,000 per hour, 6 concurrent. Pro accounts (also opted in to data sale) get 10,000 per day."
+     }
+    ],
+    "terms": [
+     "All requests (prompts, completions, metadata) are logged and, after automated PII scrubbing, may be used in internal evaluation datasets; you can opt out of evaluation use at /consent",
+     "Premium models require opting in to model training; Pro models also require opting in to sale or licensing of your data to third parties",
+     "One account per person; extra accounts, other people's accounts, or rotating keys, Discord accounts or IPs to get past limits are prohibited",
+     "Do not share your API key with unauthorized third parties",
+     "Automation is allowed within limits; after a 429 or 503, wait for Retry-After before retrying",
+     "No uptime guarantee; the service and specific models may change or stop at any time"
+    ]
+   }
+  },
+  {
+   "id": "lucidity-composite",
+   "name": "Lucidity Composite",
+   "homepage": "https://composite.lucidity.sh",
+   "region": "global",
+   "api_usable": true,
+   "status": "verified",
+   "last_verified": "2026-11-25",
+   "summary": "面向角色扮演的 OpenAI 兼容 API。自家模型 Synth 免费不限量，限每账号每分钟 5 次；另有部分免费模型，每天合计 80 次请求，部分模型每次调用按多次计。",
+   "api": {
+    "protocol": [
+     "openai",
+     "anthropic",
+     "gemini"
+    ],
+    "base_url": "https://composite.lucidity.sh/v1",
+    "anthropic_base_url": "https://composite.lucidity.sh",
+    "models_url": "https://composite.lucidity.sh/v1/models",
+    "models_access": "paid",
+    "free_models": [
+     "lucidityai/synth-2.5-flash"
+    ],
+    "free_pattern": ":free$",
+    "free_model_rule": "模型 ID 以 :free 结尾的为免费模型，共用每日 80 次额度；Synth（lucidityai/synth-2.5-flash）免费且不计入每日额度。"
+   },
+   "signup": {
+    "url": "https://composite.lucidity.sh",
+    "requires": [],
+    "notes": "需注册免费账号后在 Keys 页面创建 Key，Key 只显示一次。官方页面未写明注册所需信息。"
+   },
+   "quotas": [
+    {
+     "unit": "requests",
+     "amount": 80,
+     "period": "day",
+     "scope": "account",
+     "models": "全部 :free 免费模型合计",
+     "note": "模型列表页注明部分免费模型每次调用按多次计（如 DeepSeek V4 Flash 0731 每次计 11 次，DeepSeek V4.1 Flash 每次计 25 次），实际可用调用次数会更少。重置时间官方未公布。",
+     "evidence": "https://composite.lucidity.sh/",
+     "quote": "Free models such as GLM 5.3 Flash and DeepSeek V4 Flash share 80 requests a day"
+    },
+    {
+     "unit": "requests",
+     "amount": 5,
+     "period": "minute",
+     "scope": "account",
+     "models": "Synth（lucidityai/synth-2.5-flash）",
+     "note": "Synth 不设每日上限；免费请求和自带 Key 请求共用每分钟 5 次的限制。",
+     "evidence": "https://composite.lucidity.sh/",
+     "quote": "Synth, LuciditySH's creative model, is unlimited and free for everyone, with a limit of 5 requests per minute per account."
+    }
+   ],
+   "overage": "blocked",
+   "expires": null,
+   "onboarding": {
+    "level": "L2"
+   },
+   "terms": [
+    {
+     "point": "禁止将 Composite 用于代码编辑器、IDE 或编程代理，带工具调用定义的请求会被拒绝，反复尝试可能被封号",
+     "url": "https://lucidity.sh/terms.html"
+    },
+    {
+     "point": "禁止规避速率限制等技术保护措施",
+     "url": "https://lucidity.sh/terms.html"
+    },
+    {
+     "point": "训练数据收集默认开启，可在账号设置中关闭",
+     "url": "https://composite.lucidity.sh/"
+    },
+    {
+     "point": "禁止生成 banned.txt 中列出的内容类别，虚构或角色扮演场景同样适用",
+     "url": "https://lucidity.sh/terms.html"
+    }
+   ],
+   "tags": [
+    "免费模型",
+    "每日赠送"
+   ],
+   "sources": [
+    "https://composite.lucidity.sh/",
+    "https://composite.lucidity.sh/docs",
+    "https://composite.lucidity.sh/models",
+    "https://composite.lucidity.sh/models/deepseek/deepseek-v4-flash-0731:free",
+    "https://composite.lucidity.sh/models/lucidityai/synth-2.5-flash",
+    "https://lucidity.sh/terms.html"
+   ],
+   "en": {
+    "summary": "Roleplay-focused OpenAI-compatible API. Its own model Synth is free with no daily cap, limited to 5 requests per minute per account; some other free models share 80 requests a day, and some of them count each call as several requests.",
+    "signup_notes": "Create a free account, then make a key on the Keys page; the key is shown once. The official pages do not state what sign-up requires.",
+    "free_model_rule": "Model IDs ending in :free are free and share the daily 80-request allowance; Synth (lucidityai/synth-2.5-flash) is free and not counted against it.",
+    "tags": [
+     "Free model",
+     "Daily allowance"
+    ],
+    "quotas": [
+     {
+      "models": "All :free models combined",
+      "note": "The model list says some free models count each call as several requests (e.g. DeepSeek V4 Flash 0731 counts as 11, DeepSeek V4.1 Flash as 25), so fewer actual calls are possible. Reset time not published."
+     },
+     {
+      "models": "Synth (lucidityai/synth-2.5-flash)",
+      "note": "Synth has no daily cap; free and BYOK requests share the 5-per-minute limit."
+     }
+    ],
+    "terms": [
+     "Using Composite with code editors, IDEs or coding agents is prohibited; requests that define tools are rejected and repeated attempts can lead to suspension",
+     "Circumventing rate limits or other technical protections is prohibited",
+     "Content in the categories listed in banned.txt is prohibited, including in fiction or roleplay",
+     "Training data collection is on by default, with an opt-out in account settings"
+    ]
+   }
+  },
+  {
+   "id": "mancer",
+   "name": "Mancer",
+   "homepage": "https://mancer.tech",
+   "region": "global",
+   "api_usable": true,
+   "status": "verified",
+   "last_verified": "2026-11-24",
+   "summary": "无内容过滤的推理服务，注册后可免费调用 MythoLite（13B，上下文 2560、单次输出最多 150 token），其他模型按 credits 付费。",
+   "api": {
+    "protocol": [
+     "openai"
+    ],
+    "base_url": "https://neuro.mancer.tech/oai/v1",
+    "models_url": "https://neuro.mancer.tech/oai/v1/models",
+    "models_access": "paid",
+    "free_models": [
+     "mytholite"
+    ]
+   },
+   "signup": {
+    "url": "https://mancer.tech",
+    "requires": [
+     "email"
+    ],
+    "min_age": 18,
+    "notes": "需注册账号；条款规定未成年人不得注册。"
+   },
+   "quotas": [
+    {
+     "unit": "requests",
+     "amount": null,
+     "period": "day",
+     "scope": "account",
+     "models": "mytholite",
+     "evidence": "https://mancer.tech",
+     "quote": "Sign up to use a pretty good LLM as much as you want, for free!",
+     "note": "官方未公布免费模型的次数或速率限制；模型页显示 MythoLite 价格为 FREE，上下文 2560、输出上限 150 token。"
+    }
+   ],
+   "overage": "unknown",
+   "expires": null,
+   "onboarding": {
+    "level": "L2"
+   },
+   "terms": [
+    {
+     "point": "除企业账号外，不得让他人使用账号，不得共享登录信息和 API Key",
+     "url": "https://mancer.tech/terms"
+    },
+    {
+     "point": "输入内容可能被用于改进服务和训练模型，可按平台说明选择退出",
+     "url": "https://mancer.tech/terms"
+    },
+    {
+     "point": "未成年人（一般为 18 岁以下）不得注册或使用",
+     "url": "https://mancer.tech/terms"
+    }
+   ],
+   "tags": [
+    "免费模型"
+   ],
+   "sources": [
+    "https://mancer.tech",
+    "https://mancer.tech/models",
+    "https://mancer.tech/docs-api/",
+    "https://mancer.tech/terms",
+    "https://neuro.mancer.tech/oai/v1/models"
+   ],
+   "en": {
+    "summary": "Unfiltered inference service; after sign-up MythoLite (13B, 2560 context, up to 150 output tokens per reply) is free to call, other models are paid with credits.",
+    "signup_notes": "An account is required; the terms say minors may not register.",
+    "tags": [
+     "Free model"
+    ],
+    "quotas": [
+     {
+      "models": "mytholite",
+      "note": "No request or rate limits are published for the free model; the model page lists MythoLite as FREE with 2560 context and a 150-token output cap."
+     }
+    ],
+    "terms": [
+     "Unless you have a business account, you may not let others use your account or share your login and API key",
+     "Inputs may be used to improve the service and train models; you can opt out following the platform's instructions",
+     "Minors (generally under 18) may not register or use the platform"
+    ]
+   }
+  },
+  {
    "id": "meganova",
    "name": "MegaNova AI",
    "homepage": "https://www.meganova.ai",
@@ -3445,7 +5126,7 @@
    "region": "global",
    "api_usable": true,
    "status": "verified",
-   "last_verified": "2026-11-22",
+   "last_verified": "2026-11-23",
    "summary": "新账号默认处于免费模式，可在 Studio 创建 Key 调用 API，限速最低；具体额度在后台 Limits 页显示。",
    "api": {
     "protocol": [
@@ -3480,6 +5161,7 @@
     }
    ],
    "overage": "blocked",
+   "ended": "2026-11-23",
    "onboarding": {
     "level": "L1",
     "key_page": "https://console.mistral.ai/api-keys"
@@ -3714,7 +5396,7 @@
    "region": "cn",
    "api_usable": true,
    "status": "verified",
-   "last_verified": "2026-11-19",
+   "last_verified": "2026-11-24",
    "summary": "每天登录送魔粒，调用按模型档位扣减。",
    "api": {
     "protocol": [
@@ -3740,7 +5422,8 @@
      "amount": 200,
      "period": "day",
      "scope": "account",
-     "evidence": "https://modelscope.cn/docs/model-service/API-Inference/limits",
+     "evidence": "https://www.modelscope.cn/docs/model-service/API-Inference/limits.md",
+     "quote": "魔搭通过API-Inference，将开源模型服务化并通过API接口进行标准化，**免费**提供给广大开发者体验。",
      "note": "绑定阿里云每天再送 50；当天有效不累积；每次调用扣 0.5/1/2"
     }
    ],
@@ -3762,6 +5445,428 @@
      {
       "note": "50 more a day after linking Alibaba Cloud; valid on the day only, no rollover; each call costs 0.5/1/2"
      }
+    ]
+   }
+  },
+  {
+   "id": "moondream",
+   "name": "Moondream",
+   "homepage": "https://moondream.ai",
+   "region": "global",
+   "api_usable": true,
+   "status": "verified",
+   "last_verified": "2026-11-25",
+   "summary": "Moondream 视觉语言模型的云 API，每个工作区每月含 5 美元用量额度，超出部分按 token 计费。",
+   "api": {
+    "protocol": [
+     "openai"
+    ],
+    "base_url": "https://api.moondream.ai/v1",
+    "models_access": "quota",
+    "models": [
+     "moondream3.1-9B-A2B",
+     "moondream3-preview"
+    ]
+   },
+   "signup": {
+    "url": "https://moondream.ai/c/cloud/api-keys",
+    "requires": [
+     "email"
+    ],
+    "min_age": 18,
+    "notes": "服务条款要求年满 18 岁；注册所需信息官方页面未详细说明。"
+   },
+   "quotas": [
+    {
+     "unit": "usd",
+     "amount": 5,
+     "period": "month",
+     "scope": "account",
+     "models": "全部云端模型",
+     "note": "按工作区计；用完后按 token 计费（3.1 实时：输入 0.30 美元/百万，输出 1.00 美元/百万）；重置时间未写明",
+     "evidence": "https://moondream.ai/pricing",
+     "quote": "Every workspace includes $5/month usage credits."
+    },
+    {
+     "unit": "requests",
+     "amount": 2,
+     "period": "second",
+     "scope": "key",
+     "condition": "基础档；账户余额不少于 10 美元时为每秒 10 次",
+     "evidence": "https://docs.moondream.ai/rate-limits",
+     "quote": "2req/sec"
+    }
+   ],
+   "overage": "unknown",
+   "onboarding": {
+    "level": "L2",
+    "key_page": "https://moondream.ai/c/cloud/api-keys"
+   },
+   "terms": [
+    {
+     "point": "须年满 18 岁",
+     "url": "https://moondream.ai/terms"
+    },
+    {
+     "point": "不得超出速率限制或过度、滥用式使用",
+     "url": "https://moondream.ai/terms"
+    },
+    {
+     "point": "不得转售、出租或托管服务进行商业利用",
+     "url": "https://moondream.ai/terms"
+    },
+    {
+     "point": "官方不会用客户内容或输出训练公开模型",
+     "url": "https://moondream.ai/terms"
+    }
+   ],
+   "tags": [
+    "每月赠送"
+   ],
+   "sources": [
+    "https://moondream.ai/pricing",
+    "https://docs.moondream.ai/pricing",
+    "https://docs.moondream.ai/openai",
+    "https://docs.moondream.ai/rate-limits",
+    "https://moondream.ai/terms"
+   ],
+   "en": {
+    "summary": "Cloud API for the Moondream vision language models; each workspace includes $5 of usage credits per month, usage beyond that is billed per token.",
+    "signup_notes": "The terms require users to be at least 18; the exact sign-up requirements are not detailed on official pages.",
+    "tags": [
+     "Monthly credits"
+    ],
+    "quotas": [
+     {
+      "models": "All cloud models",
+      "note": "Per workspace; after the credits are used, usage is billed per token (3.1 real-time $0.30/M input, $1.00/M output); reset time not stated"
+     },
+     {
+      "condition": "Base tier; 10 requests per second with an account balance of at least $10"
+     }
+    ],
+    "terms": [
+     "Users must be at least 18",
+     "Do not exceed rate limits or use the service excessively or abusively",
+     "Do not resell, rent or host the service for commercial exploitation",
+     "Customer content and outputs are not used to train generally available models"
+    ]
+   }
+  },
+  {
+   "id": "morph",
+   "name": "Morph (MorphLLM)",
+   "homepage": "https://www.morphllm.com",
+   "region": "global",
+   "api_usable": true,
+   "status": "unconfirmed",
+   "last_verified": "2026-11-24",
+   "summary": "面向编程智能体的推理平台，按量付费；价格页写有每月 200 次免费请求，但没有说明适用的模型和计划。",
+   "api": {
+    "protocol": [
+     "openai",
+     "anthropic"
+    ],
+    "base_url": "https://api.morphllm.com/v1",
+    "anthropic_base_url": "https://api.morphllm.com",
+    "models_access": "paid"
+   },
+   "signup": {
+    "url": "https://www.morphllm.com/sign-up",
+    "requires": [
+     "email"
+    ],
+    "notes": "登录页可用邮箱或手机号注册；按量付费最低充值 10 美元，首次充值另送 5 美元（需先付费，不算免费额度）。"
+   },
+   "quotas": [
+    {
+     "unit": "requests",
+     "amount": 200,
+     "period": "month",
+     "scope": "account",
+     "note": "价格页在 Ultra 订阅卡片下方列出“200 req free every month”，页面未说明它属于哪个计划、适用哪些模型、何时重置，官方文档中也未找到对应说明；免费部分用完后的计费方式未公布。",
+     "evidence": "https://www.morphllm.com/pricing",
+     "quote": "200 reqfree every month"
+    }
+   ],
+   "overage": "unknown",
+   "onboarding": {
+    "level": "L2",
+    "key_page": "https://www.morphllm.com/dashboard/api-keys"
+   },
+   "terms": [
+    {
+     "point": "不会用输入和输出训练模型；免费和付费层的内容最多保留 30 天",
+     "url": "https://www.morphllm.com/privacy/tos"
+    },
+    {
+     "point": "速率限制可随时调整，无需单独通知",
+     "url": "https://www.morphllm.com/privacy/tos"
+    },
+    {
+     "point": "订阅计划（如 Ultra）不得在账号或组织外共享 Key、转售或用于服务自己产品的用户",
+     "url": "https://www.morphllm.com/privacy/tos"
+    }
+   ],
+   "tags": [
+    "每月赠送"
+   ],
+   "sources": [
+    "https://www.morphllm.com/pricing",
+    "https://docs.morphllm.com",
+    "https://docs.morphllm.com/llms.txt",
+    "https://docs.morphllm.com/general-inference",
+    "https://docs.morphllm.com/ultra-plan",
+    "https://www.morphllm.com/privacy/tos"
+   ],
+   "en": {
+    "summary": "Inference platform for coding agents, pay as you go; the pricing page lists 200 free requests every month but does not say which models or plan they apply to.",
+    "signup_notes": "Sign up with email or phone on the sign-in page; pay-as-you-go top-ups start at $10, and the first top-up adds $5 (requires paying first, so not a free allowance).",
+    "tags": [
+     "Monthly credits"
+    ],
+    "quotas": [
+     {
+      "note": "The pricing page lists \"200 req free every month\" below the Ultra subscription card, without saying which plan or models it covers or when it resets; no matching statement was found in the docs. Billing after the free part is used up is not stated."
+     }
+    ],
+    "terms": [
+     "Inputs and outputs are not used to train models; content on free and paid tiers is kept at most 30 days",
+     "Rate limits can be changed at any time without individual notice",
+     "Subscription plans (such as Ultra) may not share keys outside the account or organization, be resold, or serve your own product's users"
+    ]
+   }
+  },
+  {
+   "id": "nabh-cloud",
+   "name": "nabh.cloud",
+   "homepage": "https://nabh.cloud",
+   "region": "global",
+   "api_usable": true,
+   "status": "verified",
+   "last_verified": "2026-11-25",
+   "summary": "印度预付费模型 API 平台，免费计划注册送 50 积分，之后每月 1 日再送 50 积分（1 积分 = 1 卢比），只能调用 GPT OSS 20B，每分钟 5 次、每天 500 次。",
+   "api": {
+    "protocol": [
+     "openai"
+    ],
+    "base_url": "https://api.nabh.cloud/v1",
+    "models_access": "paid",
+    "quota_models": [
+     "gpt-oss-20b"
+    ]
+   },
+   "signup": {
+    "url": "https://app.nabh.cloud/signup",
+    "requires": [
+     "email"
+    ],
+    "min_age": 18,
+    "notes": "可用邮箱或 Google 账号注册，不需要绑卡。首次充值 500 卢比以上升级到 Developer 计划，可用更多模型。"
+   },
+   "quotas": [
+    {
+     "unit": "credits",
+     "amount": 50,
+     "period": "one-time",
+     "scope": "account",
+     "models": "gpt-oss-20b",
+     "new_users": true,
+     "note": "注册赠送；1 积分 = 1 卢比，按 token 扣费（gpt-oss-20b 每千输入 token 0.01 积分、每千输出 token 0.03 积分）；条款写明免费积分可能过期或被收回",
+     "quote": "50 Free Credits on Signup, Then 50 Every Month",
+     "evidence": "https://nabh.cloud/pricing"
+    },
+    {
+     "unit": "credits",
+     "amount": 50,
+     "period": "month",
+     "reset": "每月 1 日（时区未写明）",
+     "scope": "account",
+     "models": "gpt-oss-20b",
+     "condition": "免费计划账号",
+     "note": "1 积分 = 1 卢比；条款写明免费积分可能过期或被收回",
+     "quote": "Free-plan accounts also get 50 free credits automatically on the 1st of every month, on top of the signup bonus; whatever you bought yourself stays until you spend it.",
+     "evidence": "https://nabh.cloud/pricing"
+    },
+    {
+     "unit": "requests",
+     "amount": 500,
+     "period": "day",
+     "reset": "00:00 UTC",
+     "scope": "account",
+     "condition": "免费计划",
+     "note": "所有 API Key 共用；免费计划只能建 1 个 Key",
+     "quote": "per-day limit counts requests in a calendar day that resets at midnight UTC (5.30 am IST).",
+     "evidence": "https://nabh.cloud/docs/rate-limits"
+    },
+    {
+     "unit": "requests",
+     "amount": 5,
+     "period": "minute",
+     "reset": "rolling",
+     "scope": "account",
+     "condition": "免费计划",
+     "quote": "5 Requests/Min Rate Limit",
+     "evidence": "https://nabh.cloud/pricing"
+    }
+   ],
+   "overage": "blocked",
+   "expires": null,
+   "onboarding": {
+    "level": "L2"
+   },
+   "terms": [
+    {
+     "point": "免费积分没有现金价值，可能过期或被平台收回（第 6 条）",
+     "url": "https://nabh.cloud/terms"
+    },
+    {
+     "point": "禁止绕过速率限制、余额检查等技术限制（第 5 条）",
+     "url": "https://nabh.cloud/terms"
+    },
+    {
+     "point": "禁止以与平台竞争的方式转售或向第三方开放服务（第 5 条）",
+     "url": "https://nabh.cloud/terms"
+    },
+    {
+     "point": "用户须年满 18 岁（第 3 条）",
+     "url": "https://nabh.cloud/terms"
+    },
+    {
+     "point": "提示词和输出只用于提供服务、计费和防滥用，不用于训练",
+     "url": "https://nabh.cloud/pricing"
+    }
+   ],
+   "tags": [
+    "每月赠送",
+    "新人赠送"
+   ],
+   "sources": [
+    "https://nabh.cloud",
+    "https://nabh.cloud/pricing",
+    "https://nabh.cloud/docs",
+    "https://nabh.cloud/docs/pricing",
+    "https://nabh.cloud/docs/rate-limits",
+    "https://nabh.cloud/terms"
+   ],
+   "en": {
+    "summary": "Indian prepaid model API platform; the Free plan gives 50 credits on signup and 50 more on the 1st of every month (1 credit = ₹1), usable only on GPT OSS 20B, at 5 requests per minute and 500 per day.",
+    "signup_notes": "Sign up with email or Google, no card needed. A first recharge of ₹500 or more moves you to the Developer plan with more models.",
+    "tags": [
+     "Monthly credits",
+     "New-user credits"
+    ],
+    "quotas": [
+     {
+      "note": "Signup bonus; 1 credit = ₹1, billed per token (gpt-oss-20b ₹0.01 per 1K input, ₹0.03 per 1K output tokens); the terms say free credits may expire or be withdrawn"
+     },
+     {
+      "condition": "Free-plan accounts",
+      "note": "1 credit = ₹1; the terms say free credits may expire or be withdrawn"
+     },
+     {
+      "condition": "Free plan",
+      "note": "Shared by all API keys; the Free plan allows only 1 key"
+     },
+     {
+      "condition": "Free plan"
+     }
+    ],
+    "terms": [
+     "Free credits have no cash value and may expire or be withdrawn (section 6)",
+     "Bypassing rate limits, balance checks or other technical controls is prohibited (section 5)",
+     "Reselling or exposing the service to third parties in competition with nabh.cloud is prohibited (section 5)",
+     "Users must be at least 18 (section 3)",
+     "Prompts and completions are used only to serve requests, bill and prevent abuse, never for training"
+    ]
+   }
+  },
+  {
+   "id": "nebius",
+   "name": "Nebius Token Factory",
+   "homepage": "https://nebius.com/token-factory",
+   "region": "global",
+   "api_usable": true,
+   "status": "verified",
+   "last_verified": "2026-11-24",
+   "summary": "Nebius 的开源模型推理平台，提供 OpenAI 兼容接口；免费加入 AI Builder Program 可领取一次性 25 美元 Token Factory 额度，主要用于学习和测试。",
+   "api": {
+    "protocol": [
+     "openai"
+    ],
+    "base_url": "https://api.tokenfactory.nebius.com/v1",
+    "models_access": "quota"
+   },
+   "signup": {
+    "url": "https://dev.nebius.com/builders",
+    "requires": [
+     "email",
+     "google",
+     "github"
+    ],
+    "min_age": 18,
+    "notes": "Token Factory 用 Google 或 GitHub 账号登录；额度需加入 AI Builder Program 并验证邮箱后领取。官方未写明额度有效期。"
+   },
+   "quotas": [
+    {
+     "unit": "usd",
+     "amount": 25,
+     "period": "one-time",
+     "scope": "account",
+     "new_users": true,
+     "condition": "加入 AI Builder Program（免费）并验证邮箱后领取",
+     "note": "官方称该计划主要用于学习、测试和实验；有效期官方未公布；合作方优惠视资格和可用性而定",
+     "evidence": "https://dev.nebius.com/builders",
+     "quote": "You’ll receive $25 in Nebius AI Cloud credit, $25 in Nebius Token Factory credit, $50 in Toloka credit, and $25 in Tavily credit as well as access to a Nebius Academy certification for $1."
+    }
+   ],
+   "overage": "unknown",
+   "onboarding": {
+    "level": "L2",
+    "key_page": "https://tokenfactory.nebius.com/"
+   },
+   "terms": [
+    {
+     "point": "禁止转售、转让服务，禁止超出限速或给接口造成过重负载",
+     "url": "https://docs.nebius.com/legal/agreement"
+    },
+    {
+     "point": "受全面制裁地区（古巴、伊朗、朝鲜、克里米亚等）的客户不得使用",
+     "url": "https://docs.nebius.com/legal/agreement"
+    },
+    {
+     "point": "限速按 15 分钟窗口动态调整，最高可到基础额度的 4 倍，超出返回 429",
+     "url": "https://docs.tokenfactory.nebius.com/ai-models-inference/rate-limits.md"
+    }
+   ],
+   "tags": [
+    "新人赠送"
+   ],
+   "sources": [
+    "https://dev.nebius.com/builders",
+    "https://nebius.com/token-factory",
+    "https://docs.tokenfactory.nebius.com/quickstart",
+    "https://docs.tokenfactory.nebius.com/switch.md",
+    "https://docs.tokenfactory.nebius.com/ai-models-inference/rate-limits.md",
+    "https://docs.tokenfactory.nebius.com/legal/terms-of-service.md",
+    "https://docs.nebius.com/legal/agreement"
+   ],
+   "en": {
+    "summary": "Nebius's inference platform for open models with an OpenAI-compatible API; joining the free AI Builder Program gives a one-time $25 Token Factory credit, mainly meant for learning and testing.",
+    "signup_notes": "Token Factory sign-in uses a Google or GitHub account; the credit is claimed after joining the AI Builder Program and verifying your email. Credit expiry is not stated.",
+    "tags": [
+     "New-user credits"
+    ],
+    "quotas": [
+     {
+      "condition": "Claimed after joining the (free) AI Builder Program and verifying your email",
+      "note": "Nebius says the program is mainly for learning, testing and experimentation; expiry not published; partner offers depend on eligibility and availability"
+     }
+    ],
+    "terms": [
+     "Reselling or transferring the service, exceeding rate limits or overloading the API is prohibited",
+     "Customers in comprehensively sanctioned regions (Cuba, Iran, North Korea, Crimea, etc.) may not use the service",
+     "Rate limits adjust dynamically in 15-minute windows, up to 4x the base allocation; going over returns HTTP 429"
     ]
    }
   },
@@ -4058,14 +6163,101 @@
    }
   },
   {
+   "id": "nutrient",
+   "name": "Nutrient",
+   "homepage": "https://www.nutrient.io/api/ai-gateway-api/",
+   "region": "global",
+   "api_usable": true,
+   "status": "verified",
+   "last_verified": "2026-11-25",
+   "summary": "文档处理平台 Nutrient 的 AI Gateway 提供 OpenAI 兼容接口，免费计划每月含 5 美元用量，与其他 Nutrient API 共用，无需信用卡；用完后未开通钱包则暂停请求。",
+   "api": {
+    "protocol": [
+     "openai"
+    ],
+    "base_url": "https://api.nutrient.io/ai/v1",
+    "models_access": "quota",
+    "models": [
+     "nutrient-s",
+     "nutrient-m",
+     "nutrient-l"
+    ]
+   },
+   "signup": {
+    "url": "https://dashboard.nutrient.io/sign_up/?product=ai-gateway",
+    "requires": [
+     "email"
+    ],
+    "notes": "免费计划无需信用卡；超出免费用量需先开通预付钱包（首次充值 25 美元）。"
+   },
+   "quotas": [
+    {
+     "unit": "usd",
+     "amount": 5,
+     "period": "month",
+     "reset": "每个计费周期重置",
+     "scope": "account",
+     "models": "nutrient-s、nutrient-m、nutrient-l 等 AI Gateway 模型，按 token 计费",
+     "note": "5 美元为全部 Nutrient API（数据提取、Processor、Viewer、AI Gateway 等）共用；未用完的部分到期作废；未开通钱包时商业使用受限。",
+     "evidence": "https://www.nutrient.io/api/ai-gateway-api/",
+     "quote": "AI Gateway is billed on the same plans as every Nutrient API, and the free plan includes $5 of usage per month."
+    }
+   ],
+   "overage": "blocked",
+   "expires": null,
+   "onboarding": {
+    "level": "L2",
+    "key_page": "https://dashboard.nutrient.io"
+   },
+   "terms": [
+    {
+     "point": "用完每月用量后，若未开通钱包，请求会暂停到下个周期重置",
+     "url": "https://www.nutrient.io/api/pricing/"
+    },
+    {
+     "point": "免费计划未开通钱包时商业使用受限",
+     "url": "https://www.nutrient.io/api/pricing/"
+    },
+    {
+     "point": "OpenAI 支持的请求可能在全球处理，并为滥用监控保留最多 30 天，目前不提供零数据保留",
+     "url": "https://www.nutrient.io/api/ai-gateway-api/"
+    }
+   ],
+   "tags": [
+    "每月赠送"
+   ],
+   "sources": [
+    "https://www.nutrient.io/api/pricing/",
+    "https://www.nutrient.io/api/ai-gateway-api/"
+   ],
+   "en": {
+    "summary": "Nutrient, a document-processing platform, offers an OpenAI-compatible AI Gateway; the free plan includes $5 of usage per month, shared with other Nutrient APIs, no credit card needed; without a wallet, requests pause once it is used up.",
+    "signup_notes": "The free plan needs no credit card; going past the free usage requires a prepaid wallet (first top-up $25).",
+    "tags": [
+     "Monthly credits"
+    ],
+    "quotas": [
+     {
+      "models": "AI Gateway models such as nutrient-s, nutrient-m, nutrient-l, billed per token",
+      "note": "The $5 is shared across all Nutrient APIs (Data Extraction, Processor, Viewer, AI Gateway, etc.); unused usage expires each period; commercial use is limited without a wallet."
+     }
+    ],
+    "terms": [
+     "After the monthly usage is used up, requests pause until the next reset unless a wallet is set up",
+     "Limited commercial use on the free plan without a wallet",
+     "OpenAI-backed requests may be processed globally and retained up to 30 days for abuse monitoring; Zero Data Retention is not currently available"
+    ]
+   }
+  },
+  {
    "id": "nvidia-nim",
    "name": "NVIDIA NIM (build.nvidia.com)",
    "homepage": "https://build.nvidia.com",
    "region": "global",
    "api_usable": true,
-   "status": "unconfirmed",
-   "last_verified": "2026-11-19",
-   "summary": "开发者计划成员可免费调用，仅限原型开发和测试；额度数值待核实。",
+   "status": "verified",
+   "last_verified": "2026-11-25",
+   "summary": "build.nvidia.com 上的模型可免费用于原型开发，按速率限制计算，大多数模型每分钟最多 40 次请求，不按 token 计费。",
    "api": {
     "protocol": [
      "openai"
@@ -4073,7 +6265,7 @@
     "base_url": "https://integrate.api.nvidia.com/v1",
     "models_url": "https://integrate.api.nvidia.com/v1/models",
     "modelsdev": "nvidia",
-    "models_access": "quota"
+    "models_access": "free"
    },
    "signup": {
     "url": "https://build.nvidia.com",
@@ -4087,7 +6279,19 @@
      "amount": null,
      "period": "one-time",
      "scope": "account",
-     "evidence": "https://docs.api.nvidia.com/nim/docs/faq"
+     "evidence": "https://docs.api.nvidia.com/nim/docs/faq",
+     "quote": "Remote API calls to NVIDIA-hosted endpoints count against trail API credits.",
+     "note": "旧版文档提到试用额度，官方未公布数值；build.nvidia.com 的 FAQ 现写明免费档按速率限制、不按 token 计费。"
+    },
+    {
+     "unit": "requests",
+     "amount": 40,
+     "period": "minute",
+     "scope": "account",
+     "models": "大多数模型",
+     "condition": "仅限原型开发；个人速率限制以控制台右上角显示为准",
+     "evidence": "https://build.nvidia.com/faq",
+     "quote": "The free tier runs on rate limits - up to 40 requests per minute (RPM) for most models, with no per-token billing."
     }
    ],
    "overage": "blocked",
@@ -4097,12 +6301,23 @@
     "key_pattern": "^nvapi-"
    },
    "tags": [
+    "免费模型",
     "试用"
    ],
    "en": {
-    "summary": "Free for Developer Program members, for prototyping and testing only; the amount is still being verified.",
+    "summary": "Models on build.nvidia.com are free for prototyping under rate limits, up to 40 requests per minute for most models, with no per-token billing.",
     "tags": [
+     "Free models",
      "Trial"
+    ],
+    "quotas": [
+     {
+      "note": "Older docs mention trial credits with no published amount; the build.nvidia.com FAQ now says the free tier runs on rate limits with no per-token billing."
+     },
+     {
+      "models": "Most models",
+      "condition": "Prototyping only; your personal rate limit is shown in the top-right of the dashboard"
+     }
     ]
    }
   },
@@ -4113,7 +6328,7 @@
    "region": "global",
    "api_usable": true,
    "status": "verified",
-   "last_verified": "2026-11-19",
+   "last_verified": "2026-11-26",
    "summary": "聚合平台，名称以 :free 结尾的模型免费调用。",
    "api": {
     "protocol": [
@@ -4137,7 +6352,8 @@
      "amount": 20,
      "period": "minute",
      "scope": "account",
-     "evidence": "https://openrouter.ai/docs/api-reference/limits",
+     "evidence": "https://openrouter.ai/pricing",
+     "quote": "Free models are capped at 20 requests per minute and 50 per day, rising to 1,000 per day once your account has bought at least $10 of credits.",
      "reset": "rolling",
      "models": ":free 模型"
     },
@@ -4146,7 +6362,8 @@
      "amount": 50,
      "period": "day",
      "scope": "account",
-     "evidence": "https://openrouter.ai/docs/api-reference/limits",
+     "evidence": "https://openrouter.ai/pricing",
+     "quote": "Free models are capped at 20 requests per minute and 50 per day, rising to 1,000 per day once your account has bought at least $10 of credits.",
      "reset": "00:00 UTC",
      "models": ":free 模型",
      "condition": "累计充值不足 10 美元"
@@ -4156,7 +6373,8 @@
      "amount": 1000,
      "period": "day",
      "scope": "account",
-     "evidence": "https://openrouter.ai/docs/api-reference/limits",
+     "evidence": "https://openrouter.ai/pricing",
+     "quote": "Free models are capped at 20 requests per minute and 50 per day, rising to 1,000 per day once your account has bought at least $10 of credits.",
      "reset": "00:00 UTC",
      "models": ":free 模型",
      "condition": "累计充值满 10 美元"
@@ -4513,6 +6731,140 @@
    }
   },
   {
+   "id": "plugsky",
+   "name": "Plugsky",
+   "homepage": "https://plugsky.com",
+   "region": "global",
+   "api_usable": true,
+   "status": "verified",
+   "last_verified": "2026-11-25",
+   "summary": "OpenAI 兼容 API 平台，免费计划无需信用卡，可调用 plugsky-micro 和 plugsky-lite，新账号每天约 100 次请求、5 万 tokens，按滚动 5 小时窗口计量。",
+   "api": {
+    "protocol": [
+     "openai",
+     "anthropic"
+    ],
+    "base_url": "https://api.plugsky.com/v1",
+    "anthropic_base_url": "https://api.plugsky.com",
+    "models_url": "https://api.plugsky.com/v1/models",
+    "models_access": "paid",
+    "free_models": [
+     "plugsky-micro",
+     "plugsky-lite"
+    ]
+   },
+   "signup": {
+    "url": "https://plugsky.com/dashboard",
+    "requires": [],
+    "min_age": 16,
+    "notes": "官方写明免费计划无需信用卡；注册所需信息页面未写明。"
+   },
+   "quotas": [
+    {
+     "unit": "requests",
+     "amount": 100,
+     "period": "day",
+     "reset": "rolling",
+     "scope": "account",
+     "models": "plugsky-micro、plugsky-lite 合计",
+     "condition": "2026 年 11 月 2 日及之后注册的账号",
+     "note": "实际按滚动 5 小时窗口计量，每个窗口约 21 次请求，100 次/天为参考值；另限 1 个并发、每分钟 30 次，单次输入 32K、输出 2K。服务条款写的是新账号仅前 24 小时为 100 次/天、之后为 500 次/天，与价格页不一致，这里按价格页较低的数字填写。",
+     "evidence": "https://plugsky.com/pricing",
+     "quote": "Accounts created from 2 November 2026 receive about 21 requests and 10,400 tokens per rolling 5-hour window (100 / 50,000 per day reference), one concurrent request and 30 RPM."
+    },
+    {
+     "unit": "tokens",
+     "amount": 50000,
+     "period": "day",
+     "reset": "rolling",
+     "scope": "account",
+     "models": "plugsky-micro、plugsky-lite 合计",
+     "condition": "2026 年 11 月 2 日及之后注册的账号",
+     "note": "按滚动 5 小时窗口计量，每个窗口约 10,400 tokens，50,000/天为参考值。",
+     "evidence": "https://plugsky.com/pricing",
+     "quote": "Accounts created from 2 November 2026 receive about 21 requests and 10,400 tokens per rolling 5-hour window (100 / 50,000 per day reference), one concurrent request and 30 RPM."
+    },
+    {
+     "unit": "requests",
+     "amount": 30,
+     "period": "minute",
+     "scope": "account",
+     "models": "plugsky-micro、plugsky-lite",
+     "condition": "免费计划",
+     "evidence": "https://plugsky.com/terms",
+     "quote": "Published free fair-use limits are: 2 active API keys, 30 requests/minute, 2 concurrent requests, 500 requests/day, 250,000 tokens/day, 32K input / 2K output tokens per request, and no agents."
+    }
+   ],
+   "overage": "blocked",
+   "expires": null,
+   "onboarding": {
+    "level": "L2",
+    "key_page": "https://plugsky.com/dashboard",
+    "key_pattern": "sk-live-"
+   },
+   "terms": [
+    {
+     "point": "创建多个账号、共享 Key、转售或大量自动化调用可能被限速或封停（3.1）",
+     "url": "https://plugsky.com/terms"
+    },
+    {
+     "point": "请求会转发给第三方模型提供方（如 opencode.ai、NVIDIA NIM），需同时遵守其使用条款（7）",
+     "url": "https://plugsky.com/terms"
+    },
+    {
+     "point": "OpenAI、Anthropic 等模型名只是兼容别名，实际由 Plugsky 自己的模型处理，不是原厂模型",
+     "url": "https://plugsky.com/facts"
+    },
+    {
+     "point": "免费计划无 SLA，按尽力提供（8）",
+     "url": "https://plugsky.com/terms"
+    }
+   ],
+   "tags": [
+    "永久免费",
+    "免费模型",
+    "每日赠送"
+   ],
+   "sources": [
+    "https://plugsky.com/pricing",
+    "https://plugsky.com/terms",
+    "https://plugsky.com/docs",
+    "https://plugsky.com/facts",
+    "https://api.plugsky.com/v1/models"
+   ],
+   "en": {
+    "summary": "OpenAI-compatible API platform; the Free plan needs no card and covers plugsky-micro and plugsky-lite, with about 100 requests and 50,000 tokens per day for new accounts, metered in a rolling 5-hour window.",
+    "signup_notes": "The Free plan needs no credit card per the official pages; what sign-up requires is not stated.",
+    "tags": [
+     "Free forever",
+     "Free model",
+     "Daily credits"
+    ],
+    "quotas": [
+     {
+      "models": "plugsky-micro and plugsky-lite combined",
+      "condition": "Accounts created on or after 2 November 2026",
+      "note": "Metered per rolling 5-hour window, about 21 requests per window; 100/day is a reference figure. Also 1 concurrent request, 30 RPM, 32K input / 2K output per request. The terms say new accounts get 100/day only for the first 24 hours and 500/day after; this conflicts with the pricing page, so the lower pricing-page figure is used."
+     },
+     {
+      "models": "plugsky-micro and plugsky-lite combined",
+      "condition": "Accounts created on or after 2 November 2026",
+      "note": "Metered per rolling 5-hour window, about 10,400 tokens per window; 50,000/day is a reference figure."
+     },
+     {
+      "models": "plugsky-micro and plugsky-lite",
+      "condition": "Free plan"
+     }
+    ],
+    "terms": [
+     "Multiple accounts, key sharing, resale or high-volume automated workloads may be throttled or suspended (3.1)",
+     "Requests are routed to third-party model providers (e.g. opencode.ai, NVIDIA NIM), whose terms also apply (7)",
+     "OpenAI, Anthropic and other model names are compatibility aliases served by Plugsky's own models, not the original vendors",
+     "The Free plan has no SLA, best effort only (8)"
+    ]
+   }
+  },
+  {
    "id": "pollinations",
    "name": "Pollinations.ai",
    "homepage": "https://pollinations.ai",
@@ -4617,6 +6969,213 @@
    }
   },
   {
+   "id": "powertokens",
+   "name": "PowerTokens",
+   "homepage": "https://www.powertokens.ai",
+   "region": "global",
+   "api_usable": true,
+   "status": "verified",
+   "last_verified": "2026-11-25",
+   "summary": "聚合国内大模型的 API 平台，模型页标明 glm-4.7-flash 输入输出价格均为 0；其余模型按量付费，限额官方未公布。",
+   "api": {
+    "protocol": [
+     "openai"
+    ],
+    "base_url": "https://api.powertokens.ai/v1",
+    "models_access": "paid",
+    "free_models": [
+     "glm-4.7-flash"
+    ]
+   },
+   "signup": {
+    "url": "https://www.powertokens.ai",
+    "requires": [
+     "email"
+    ],
+    "min_age": 18,
+    "notes": "可用 Google、GitHub 或邮箱注册；免费模型调用是否需要账户有余额，官方未写明。"
+   },
+   "quotas": [
+    {
+     "unit": "tokens",
+     "amount": null,
+     "period": "day",
+     "scope": "account",
+     "models": "glm-4.7-flash",
+     "note": "模型页标价输入、输出均为 0 Credits / 1M Tokens；调用次数和 token 限额官方未公布。",
+     "evidence": "https://www.powertokens.ai/models/glm-4.7-flash",
+     "quote": "Output$0/ 1M Tokens(0 Credits)"
+    },
+    {
+     "unit": "credits",
+     "amount": null,
+     "period": "one-time",
+     "scope": "account",
+     "new_users": true,
+     "condition": "仅在平台举办新用户注册赠送活动且满足条件时发放",
+     "note": "快速入门写明该活动并非一直有；模型页写注册可获免费测试额度。金额官方未公布，按保守理解为不一定有。",
+     "evidence": "https://docs.powertokens.ai/en/",
+     "quote": "This promotion is not always available; when no promotion is running, newly registered users will not automatically receive bonus Credits."
+    }
+   ],
+   "overage": "unknown",
+   "onboarding": {
+    "level": "L2",
+    "key_page": "https://www.powertokens.ai/en/api-keys"
+   },
+   "terms": [
+    {
+     "point": "使用者须年满 18 岁（5.1）",
+     "url": "https://www.powertokens.ai/terms-of-use"
+    },
+    {
+     "point": "受出口管制、制裁等法律限制者不得使用（5.2）",
+     "url": "https://www.powertokens.ai/terms-of-use"
+    },
+    {
+     "point": "平台不会未经同意用用户内容训练模型，但第三方模型提供方可能按其自身条款处理或使用输入输出（9.3）",
+     "url": "https://www.powertokens.ai/terms-of-use"
+    },
+    {
+     "point": "赠送积分不可退款、不可转让，有效期一年，平台可随时调整或清零；领取赠送积分须对价格信息保密（8.9）",
+     "url": "https://www.powertokens.ai/terms-of-use"
+    }
+   ],
+   "tags": [
+    "聚合",
+    "免费模型",
+    "新人赠送"
+   ],
+   "sources": [
+    "https://www.powertokens.ai/models/glm-4.7-flash",
+    "https://www.powertokens.ai/pricing",
+    "https://docs.powertokens.ai/en/",
+    "https://docs.powertokens.ai/en/guides/api-key-and-model-call.md",
+    "https://www.powertokens.ai/terms-of-use"
+   ],
+   "en": {
+    "summary": "API platform aggregating Chinese models; the model page lists glm-4.7-flash at 0 for both input and output. Other models are pay-as-you-go; limits are not published.",
+    "signup_notes": "Sign up with Google, GitHub or email; whether calling the free model requires a positive balance is not stated.",
+    "tags": [
+     "Aggregator",
+     "Free model",
+     "New-user credits"
+    ],
+    "quotas": [
+     {
+      "models": "glm-4.7-flash",
+      "note": "The model page prices input and output at 0 Credits / 1M tokens; request and token limits are not published."
+     },
+     {
+      "condition": "Only while a new-user sign-up bonus promotion is running and its requirements are met",
+      "note": "The quickstart says this promotion is not always available; the model page says sign-up gives free test credits. Amount not published; treated conservatively as not guaranteed."
+     }
+    ],
+    "terms": [
+     "Users must be at least 18 (5.1)",
+     "Not available to those barred by export control, sanctions or similar laws (5.2)",
+     "The platform does not train on user content without consent, but third-party model providers may process or use inputs and outputs under their own terms (9.3)",
+     "Bonus points are non-refundable, non-transferable, valid for one year and may be adjusted or zeroed at any time; receiving them requires keeping prices confidential (8.9)"
+    ]
+   }
+  },
+  {
+   "id": "ppio",
+   "name": "PPIO",
+   "name_zh": "PPIO 派欧云",
+   "homepage": "https://ppio.com",
+   "region": "cn",
+   "api_usable": true,
+   "status": "unconfirmed",
+   "last_verified": "2026-11-24",
+   "summary": "按量付费的模型 API 平台，注册页写明新用户受邀注册可得 ¥5 免费额度，没有长期免费模型；未实名账号限速每分钟 1 次。",
+   "api": {
+    "protocol": [
+     "openai"
+    ],
+    "base_url": "https://api.ppio.com/openai",
+    "models_url": "https://api.ppio.com/openai/v1/models",
+    "models_access": "quota"
+   },
+   "signup": {
+    "url": "https://ppio.com/user/register",
+    "requires": [
+     "phone_cn",
+     "real_name"
+    ],
+    "notes": "注册页支持手机号（默认 +86）、账号或微信扫码注册；未实名账号 API 限速每分钟 1 次，且不能充值，实际使用需完成实名认证。"
+   },
+   "quotas": [
+    {
+     "unit": "cny",
+     "amount": 5,
+     "period": "one-time",
+     "scope": "account",
+     "new_users": true,
+     "condition": "新用户通过邀请注册",
+     "quote": "新用户受邀注册，立得 ¥5 免费额度",
+     "evidence": "https://ppio.com/user/register",
+     "note": "注册页写的是“受邀注册”，官方公告称“邀请奖励”活动已于 2025-11-30 下线；文档常见问题只说首次注册用户可领取新用户代金券，未写金额和有效期。直接注册能否获得官方未明确，按保守理解只计受邀注册。"
+    }
+   ],
+   "overage": "blocked",
+   "onboarding": {
+    "level": "L2",
+    "key_page": "https://ppio.com/settings/key-management"
+   },
+   "terms": [
+    {
+     "point": "每个个人主体最多实名认证 3 个账号，每个企业主体最多 10 个",
+     "url": "https://ppio.com/docs/support/identity-verification.md"
+    },
+    {
+     "point": "未实名认证账号 API 调用限速为每分钟 1 次请求，且不能充值",
+     "url": "https://ppio.com/docs/support/identity-verification.md"
+    },
+    {
+     "point": "部分大语言模型仅对企业认证用户开放",
+     "url": "https://ppio.com/docs/support/identity-verification.md"
+    },
+    {
+     "point": "余额耗尽时请求返回 403，需充值后继续使用",
+     "url": "https://ppio.com/docs/model/FAQs.md"
+    }
+   ],
+   "tags": [
+    "新人赠送",
+    "试用"
+   ],
+   "sources": [
+    "https://ppio.com/user/register",
+    "https://ppio.com/pricing",
+    "https://ppio.com/docs/model/FAQs.md",
+    "https://ppio.com/docs/model/get-start.md",
+    "https://ppio.com/docs/model/llm.md",
+    "https://ppio.com/docs/support/identity-verification.md",
+    "https://ppio.com/docs/announcement/announcement.md"
+   ],
+   "en": {
+    "summary": "Pay-as-you-go model API platform; the sign-up page says new users who register through an invitation get ¥5 of free credit. There are no permanently free models, and accounts without real-name verification are limited to 1 request per minute.",
+    "signup_notes": "Sign up with a phone number (+86 by default), a username or WeChat QR; unverified accounts are limited to 1 API request per minute and cannot top up, so real-name verification is needed in practice.",
+    "tags": [
+     "New-user credits",
+     "Trial"
+    ],
+    "quotas": [
+     {
+      "condition": "New users who register through an invitation",
+      "note": "The sign-up page says \"invited registration\", while an official announcement says the referral reward program ended on 2025-11-30; the docs FAQ only says first-time users can claim a new-user voucher, with no amount or validity. Whether direct sign-ups get it is not stated, so this is conservatively limited to invited sign-ups."
+     }
+    ],
+    "terms": [
+     "At most 3 accounts per verified individual and 10 per verified company",
+     "Accounts without real-name verification are limited to 1 API request per minute and cannot top up",
+     "Some LLMs are only available to company-verified users",
+     "When the balance runs out requests return 403; top up to continue"
+    ]
+   }
+  },
+  {
    "id": "qiniu-conatus",
    "name": "Qiniu Cloud Conatus",
    "name_zh": "七牛云 Conatus",
@@ -4624,7 +7183,7 @@
    "region": "cn",
    "api_usable": true,
    "status": "verified",
-   "last_verified": "2026-11-22",
+   "last_verified": "2026-11-24",
    "summary": "七牛云限时免费模型 qiniu/conatus-free，完成实名认证后每日免费 1 亿 Token，充值满 100 元后提升至每日 10 亿 Token，额度用尽即停不扣费。",
    "api": {
     "protocol": [
@@ -4733,13 +7292,115 @@
    }
   },
   {
+   "id": "reflection-ai",
+   "name": "Reflection AI",
+   "homepage": "https://reflection.ai",
+   "region": "global",
+   "api_usable": true,
+   "status": "unconfirmed",
+   "last_verified": "2026-11-25",
+   "summary": "Reflection 自家 API 提供 Beam-1.0-501B-A23B 模型，官方博客称公开测试期可免费开始使用，具体免费额度未公开，部分组织需先验证信用卡。",
+   "api": {
+    "protocol": [
+     "openai"
+    ],
+    "base_url": "https://api.reflection.ai/openai/v1",
+    "models": [
+     "Beam-1.0-501B-A23B"
+    ],
+    "models_access": "quota"
+   },
+   "signup": {
+    "url": "https://platform.reflection.ai/login",
+    "requires": [
+     "email"
+    ],
+    "min_age": 18,
+    "notes": "邮箱注册；文档写明部分组织需在 Billing 中验证信用卡后 API Key 才能使用。"
+   },
+   "quotas": [
+    {
+     "unit": "tokens",
+     "amount": null,
+     "period": "day",
+     "reset": "00:00 UTC",
+     "scope": "org",
+     "models": "Beam-1.0-501B-A23B",
+     "condition": "公开测试期（public beta）",
+     "note": "官方未公布免费额度数字；文档说明套餐可能设每日未缓存输入 token 和输出 token 额度，按组织计算，每天 00:00 UTC 重置，具体数值只在响应头中返回。",
+     "evidence": "http://reflection.ai/blog/beam-is-available",
+     "quote": "It’s free to start."
+    }
+   ],
+   "overage": "unknown",
+   "onboarding": {
+    "level": "L2",
+    "key_page": "https://platform.reflection.ai/api-keys",
+    "quota_headers": [
+     "x-ratelimit-limit-uncached-input-tokens-day",
+     "x-ratelimit-remaining-uncached-input-tokens-day",
+     "x-ratelimit-limit-output-tokens-day",
+     "x-ratelimit-remaining-output-tokens-day",
+     "x-ratelimit-remaining-tokens-day"
+    ]
+   },
+   "terms": [
+    {
+     "point": "限额按组织计算，增加 Key 或项目不会提高限额",
+     "url": "https://developers.reflection.ai/rate-limits.md"
+    },
+    {
+     "point": "不得与他人共享登录凭据、转让或转售账号，不得设法绕过用量限制",
+     "url": "https://reflection.ai/legal/commercial-terms-of-service"
+    },
+    {
+     "point": "使用免费或折扣服务（含 Contributor Plan）时，输入输出可被用于训练模型",
+     "url": "https://reflection.ai/legal/commercial-terms-of-service"
+    },
+    {
+     "point": "须年满 18 岁或所在地成年年龄",
+     "url": "https://reflection.ai/legal/commercial-terms-of-service"
+    }
+   ],
+   "tags": [
+    "试用"
+   ],
+   "sources": [
+    "http://reflection.ai/blog/beam-is-available",
+    "https://developers.reflection.ai/rate-limits.md",
+    "https://developers.reflection.ai/authentication.md",
+    "https://developers.reflection.ai/models.md",
+    "https://reflection.ai/legal/commercial-terms-of-service"
+   ],
+   "en": {
+    "summary": "Reflection's own API serves the Beam-1.0-501B-A23B model; the official blog says it is free to start during the public beta, but the free allowance is not published and some organizations must verify a credit card first.",
+    "signup_notes": "Sign up with email; the docs say some organizations must verify a credit card in Billing before API keys work.",
+    "tags": [
+     "Trial"
+    ],
+    "quotas": [
+     {
+      "models": "Beam-1.0-501B-A23B",
+      "condition": "Public beta",
+      "note": "No free allowance figure is published; the docs say a plan may set daily allowances of uncached input tokens and output tokens per organization, renewing at 00:00 UTC, with values reported only in response headers."
+     }
+    ],
+    "terms": [
+     "Limits apply per organization; adding keys or projects does not raise them",
+     "Do not share login credentials, transfer or resell the account, or try to get around usage limits",
+     "With free or discounted services (including the Contributor Plan), inputs and outputs may be used to train models",
+     "Must be at least 18 or the age of majority where you live"
+    ]
+   }
+  },
+  {
    "id": "regolo",
    "name": "Regolo.ai",
    "homepage": "https://regolo.ai",
    "region": "global",
    "api_usable": true,
    "status": "verified",
-   "last_verified": "2026-11-22",
+   "last_verified": "2026-11-24",
    "summary": "意大利云厂商 Seeweb 的欧盟模型推理服务，新用户可免费试用 30 天，期间每天 100 万 token，可用全部 Core 模型，无需信用卡。",
    "api": {
     "protocol": [
@@ -4766,7 +7427,8 @@
      "condition": "新用户 30 天免费试用期内",
      "expires_days": 30,
      "note": "试用期限速更严格；官方未写明每日重置时区",
-     "evidence": "https://regolo.ai/pricing/"
+     "evidence": "https://regolo.ai/pricing/",
+     "quote": "1M tokens per day"
     }
    ],
    "overage": "blocked",
@@ -4961,6 +7623,108 @@
      "On the free plan, inputs and outputs sent to models labelled Training Permitted may be used for training (5.9, 6.2(a))",
      "Use from jurisdictions under comprehensive UK, EU or US sanctions is prohibited (9.2)",
      "The free models are free for now; price changes will be announced in the changelog in advance"
+    ]
+   }
+  },
+  {
+   "id": "router9",
+   "name": "Router9",
+   "homepage": "https://www.router9.com",
+   "region": "global",
+   "api_usable": true,
+   "status": "verified",
+   "last_verified": "2026-11-25",
+   "summary": "订阅制模型网关，免费计划每月 10,000 积分（约 1 美元），每 4 小时限 5 次请求，只能调用标为免费档的模型。",
+   "api": {
+    "protocol": [
+     "openai"
+    ],
+    "base_url": "https://api.router9.com/v1",
+    "models_url": "https://api.router9.com/v1/models",
+    "models_access": "paid",
+    "free_model_rule": "免费账号只能调用后台标为免费档（free-tier）的模型，官方未公开具体名单；调用其他模型返回 403 model_requires_upgrade。"
+   },
+   "signup": {
+    "url": "https://www.router9.com",
+    "requires": [
+     "email"
+    ],
+    "min_age": 16,
+    "notes": "用 Google 账号或邮箱一次性验证码登录；条款规定一人一个账号。"
+   },
+   "quotas": [
+    {
+     "unit": "credits",
+     "amount": 10000,
+     "period": "month",
+     "reset": "按账号注册日每月续期",
+     "scope": "account",
+     "models": "仅免费档模型",
+     "condition": "免费计划",
+     "note": "1 美元 = 10,000 积分，按各模型实际成本扣减；另有每 4 小时 5 次请求的限制。积分说明页写未用完的积分不结转，限流页写结转 80%（最多 2 倍），按不结转理解。额度与 Studio 生成及所有 Key 共用。",
+     "evidence": "https://www.router9.com/pricing",
+     "quote": "10,000 credit monthly quota (~$1)"
+    }
+   ],
+   "overage": "auto_paid",
+   "onboarding": {
+    "level": "L2"
+   },
+   "terms": [
+    {
+     "point": "一人一个账号，账号和 API Key 的使用由本人负责（第 1 条）",
+     "url": "https://www.router9.com/terms"
+    },
+    {
+     "point": "禁止绕过速率限制、额度或其他限制（第 3 条）",
+     "url": "https://www.router9.com/terms"
+    },
+    {
+     "point": "未经书面授权不得转售访问权限（第 3 条）",
+     "url": "https://www.router9.com/terms"
+    },
+    {
+     "point": "官方声明不使用用户输入输出训练模型，但上游模型商按各自条款处理内容（第 2 条）",
+     "url": "https://www.router9.com/terms"
+    },
+    {
+     "point": "免费额度用完后从预付余额扣费；余额也用完才返回 429",
+     "url": "https://www.router9.com/docs/token-plan/credits"
+    }
+   ],
+   "tags": [
+    "聚合",
+    "每月赠送"
+   ],
+   "sources": [
+    "https://www.router9.com/pricing",
+    "https://www.router9.com/docs/token-plan/billing",
+    "https://www.router9.com/docs/token-plan/credits",
+    "https://www.router9.com/docs/api-reference/rate-limiting",
+    "https://www.router9.com/docs/api-reference/models",
+    "https://www.router9.com/terms"
+   ],
+   "en": {
+    "summary": "Subscription model gateway; the Free plan gives 10,000 credits (about $1) per month, 5 requests per 4 hours, and only models flagged as free-tier.",
+    "signup_notes": "Sign in with Google or a one-time code sent by email; the terms allow one account per person.",
+    "free_model_rule": "Free accounts can only call models flagged free-tier by the admins; the list is not published. Other models return 403 model_requires_upgrade.",
+    "tags": [
+     "Aggregator",
+     "Monthly credits"
+    ],
+    "quotas": [
+     {
+      "models": "Free-tier models only",
+      "condition": "Free plan",
+      "note": "$1 = 10,000 credits, charged by each model's cost; there is also a limit of 5 requests per 4 hours. The credits page says unused credits do not roll over, the rate-limit page says 80% carries over (up to 2x); treated as no rollover. Shared with Studio and all keys."
+     }
+    ],
+    "terms": [
+     "One person, one account; you are responsible for use of your account and keys (section 1)",
+     "Getting around rate limits, quotas or other limits is prohibited (section 3)",
+     "Reselling access without written authorisation is prohibited (section 3)",
+     "Router9 states it does not train on inputs or outputs; upstream providers process content under their own terms (section 2)",
+     "After the free allowance runs out, usage is drawn from the prepaid balance; 429 only when that is also empty"
     ]
    }
   },
@@ -5385,7 +8149,7 @@
    "region": "global",
    "api_usable": true,
    "status": "verified",
-   "last_verified": "2026-11-22",
+   "last_verified": "2026-11-24",
    "summary": "法国云厂商 Scaleway 的模型服务，免费档可免费处理 100 万 token，超出后自动按量计费，需绑定支付方式。",
    "api": {
     "protocol": [
@@ -5557,7 +8321,7 @@
    "region": "cn",
    "api_usable": true,
    "status": "verified",
-   "last_verified": "2026-11-22",
+   "last_verified": "2026-11-27",
    "summary": "Token Plan 公测期免费档 0 元/月，按积分池计量，设滚动 5 小时和滚动周两层额度。",
    "api": {
     "protocol": [
@@ -5585,7 +8349,8 @@
      "scope": "account",
      "models": "通用积分池",
      "evidence": "https://platform.sensenova.cn/docs",
-     "note": "另有滚动 5 小时上限 120,000 积分；不同模型按实际用量扣不同积分；属公测期权益"
+     "note": "另有滚动 5 小时上限 120,000 积分；不同模型按实际用量扣不同积分；属公测期权益",
+     "quote": "同时，自 2026 年 10 月 27 日起，我们将提高各位用户的通用积分窗口额度。"
     },
     {
      "unit": "points",
@@ -5595,7 +8360,8 @@
      "scope": "account",
      "models": "sensenova-6.8-flash-lite 专属积分池",
      "evidence": "https://platform.sensenova.cn/docs",
-     "note": "另有滚动 5 小时上限 60,000 积分；用完后可继续扣通用积分池"
+     "note": "另有滚动 5 小时上限 60,000 积分；用完后可继续扣通用积分池",
+     "quote": "600,000 积分的滚动周额度。"
     }
    ],
    "overage": "blocked",
@@ -5630,6 +8396,189 @@
    }
   },
   {
+   "id": "shuyanai",
+   "name": "DataEye",
+   "name_zh": "数眼智能",
+   "homepage": "https://www.shuyanai.com",
+   "region": "cn",
+   "api_usable": true,
+   "status": "verified",
+   "last_verified": "2026-11-25",
+   "summary": "国内大模型 API 聚合平台，注册并绑定手机号可领取 50 万 Tokens 一次性免费额度，用完后需充值按量付费。",
+   "api": {
+    "protocol": [
+     "openai"
+    ],
+    "base_url": "https://platform.shuyanai.com/v1",
+    "models_access": "quota"
+   },
+   "signup": {
+    "url": "https://www.shuyanai.com/login?redirect=%2Fadmin%2Fhome",
+    "requires": [
+     "phone"
+    ],
+    "notes": "可用手机号或邮箱注册，也可微信登录；领取免费额度需绑定手机号。"
+   },
+   "quotas": [
+    {
+     "unit": "tokens",
+     "amount": 500000,
+     "period": "one-time",
+     "scope": "account",
+     "condition": "注册并绑定手机号",
+     "new_users": true,
+     "note": "定价页写 50 万 Tokens，首页写“新用户赠送 5M 词元”，两处不一致，按较少的 50 万填写；适用模型和有效期官方未写明。邀请用户可再获得 50 万 Tokens。",
+     "evidence": "https://www.shuyanai.com/price",
+     "quote": "注册并绑定手机号可免费领取 50 万 Tokens，邀请用户可再次获得 50 万 Tokens！"
+    }
+   ],
+   "overage": "unknown",
+   "expires": null,
+   "onboarding": {
+    "level": "L2"
+   },
+   "terms": [
+    {
+     "point": "不得恶意注册账号，包括频繁注册、批量注册",
+     "url": "https://www.shuyanai.com/terms-of-service"
+    },
+    {
+     "point": "不得出租、出借、转让、售卖、共享账号、会员权益或 API Key",
+     "url": "https://www.shuyanai.com/terms-of-service"
+    },
+    {
+     "point": "禁止用自动化、批量注册、脚本、代理池、恶意并发等方式干扰平台；未经书面授权不得转售或共享 API 与额度",
+     "url": "https://www.shuyanai.com/terms-of-service"
+    },
+    {
+     "point": "平台可根据负载、套餐、风险等对调用频率、并发、额度、模型类型等设置限制，并可调整额度规则和价格",
+     "url": "https://www.shuyanai.com/terms-of-service"
+    }
+   ],
+   "tags": [
+    "聚合",
+    "新人赠送"
+   ],
+   "sources": [
+    "https://www.shuyanai.com/price",
+    "https://www.shuyanai.com/",
+    "https://www.shuyanai.com/openclaw",
+    "https://www.shuyanai.com/coding-plan",
+    "https://www.shuyanai.com/terms-of-service"
+   ],
+   "en": {
+    "summary": "Chinese LLM API aggregator; signing up and binding a phone number gives a one-time free credit of 500,000 tokens, after which you top up and pay per use.",
+    "signup_notes": "Sign up with phone or email, or log in with WeChat; a bound phone number is required to claim the free credit.",
+    "tags": [
+     "Aggregator",
+     "New-user credits"
+    ],
+    "quotas": [
+     {
+      "condition": "Sign up and bind a phone number",
+      "note": "The pricing page says 500,000 tokens while the homepage says new users get 5M tokens; the smaller figure is used. Eligible models and expiry are not stated. Inviting a user gives another 500,000 tokens."
+     }
+    ],
+    "terms": [
+     "No malicious registration, including frequent or bulk sign-ups",
+     "Accounts, membership benefits and API keys may not be rented, lent, transferred, sold or shared",
+     "No automation, bulk registration, scripts, proxy pools or abusive concurrency; reselling or sharing the API or credits needs written authorization",
+     "The platform may limit rate, concurrency, quota and model types based on load, plan or risk, and may change quota rules and prices"
+    ]
+   }
+  },
+  {
+   "id": "siliconflow-global",
+   "name": "SiliconFlow (International)",
+   "name_zh": "硅基流动国际站",
+   "homepage": "https://www.siliconflow.com",
+   "region": "global",
+   "api_usable": true,
+   "status": "verified",
+   "last_verified": "2026-11-25",
+   "summary": "硅基流动国际站，按量付费的模型 API 平台；官方定价页写明新账号可用 1 美元免费额度起步，不面向中国大陆用户。",
+   "api": {
+    "protocol": [
+     "openai"
+    ],
+    "base_url": "https://api.siliconflow.com/v1",
+    "models_access": "quota"
+   },
+   "signup": {
+    "url": "https://cloud.siliconflow.com",
+    "requires": [
+     "google",
+     "github"
+    ],
+    "regions_blocked": [
+     "CN"
+    ],
+    "notes": "登录页提供 Google 或 GitHub 登录；服务条款写明不向中国大陆用户提供服务，大陆用户需使用 siliconflow.cn。"
+   },
+   "quotas": [
+    {
+     "unit": "usd",
+     "amount": 1,
+     "period": "one-time",
+     "scope": "account",
+     "evidence": "https://www.siliconflow.com/pricing",
+     "quote": "No, there are no minimum commitments. You only pay for what you use, and you can start with $1 in free credits.",
+     "note": "定价页常见问题写明的起步免费额度；领取条件和有效期官方未公布。",
+     "new_users": true
+    }
+   ],
+   "overage": "unknown",
+   "onboarding": {
+    "level": "L1",
+    "key_page": "https://cloud.siliconflow.com/account/ak"
+   },
+   "terms": [
+    {
+     "point": "服务不向中国大陆用户提供，大陆用户需使用 siliconflow.cn",
+     "url": "https://docs.siliconflow.com/en/legals/terms-of-service"
+    },
+    {
+     "point": "不得将平台或服务提供给他人使用，不得转租、转售或分发（3.4 e、f）",
+     "url": "https://docs.siliconflow.com/en/legals/terms-of-service"
+    },
+    {
+     "point": "禁止用平台或服务从事商业用途（3.4 p）",
+     "url": "https://docs.siliconflow.com/en/legals/terms-of-service"
+    },
+    {
+     "point": "禁止用爬虫等自动化手段抓取平台数据（3.4 i）",
+     "url": "https://docs.siliconflow.com/en/legals/terms-of-service"
+    }
+   ],
+   "tags": [
+    "新人赠送"
+   ],
+   "sources": [
+    "https://www.siliconflow.com/pricing",
+    "https://docs.siliconflow.com/en/userguide/quickstart",
+    "https://docs.siliconflow.com/en/userguide/rate-limits/rate-limit-and-upgradation",
+    "https://docs.siliconflow.com/en/legals/terms-of-service"
+   ],
+   "en": {
+    "summary": "SiliconFlow's international site, a pay-as-you-go model API platform; the official pricing page says you can start with $1 in free credits. Not available to users in mainland China.",
+    "signup_notes": "The login page offers Google or GitHub sign-in; the terms say the service is not available in mainland China, where users should use siliconflow.cn.",
+    "tags": [
+     "New users"
+    ],
+    "quotas": [
+     {
+      "note": "Starting free credit stated in the pricing FAQ; eligibility and expiry are not published."
+     }
+    ],
+    "terms": [
+     "Not available to users in mainland China; they should use siliconflow.cn",
+     "You may not make the platform available to others, or rent, resell or distribute it (3.4 e, f)",
+     "Commercial use of the platform or services is prohibited (3.4 p)",
+     "Scraping platform data with automated tools is prohibited (3.4 i)"
+    ]
+   }
+  },
+  {
    "id": "siliconflow",
    "name": "SiliconFlow",
    "name_zh": "硅基流动",
@@ -5637,7 +8586,7 @@
    "region": "cn",
    "api_usable": true,
    "status": "verified",
-   "last_verified": "2026-11-19",
+   "last_verified": "2026-11-24",
    "summary": "部分模型长期免费（按模型限速）；实名送代金券。",
    "api": {
     "protocol": [
@@ -5670,7 +8619,8 @@
      "scope": "model",
      "evidence": "https://www.siliconflow.cn/pricing",
      "models": "定价页标“免费”的模型",
-     "note": "按模型限速"
+     "note": "按模型限速",
+     "quote": "生成图片每图片免费"
     },
     {
      "unit": "cny",
@@ -5679,7 +8629,8 @@
      "scope": "account",
      "evidence": "https://www.siliconflow.cn/news/od7wj9rr23p95uhihmhrombp",
      "condition": "实名认证",
-     "note": "活动截至 2026-12-31"
+     "note": "活动截至 2026-12-31",
+     "quote": "认证立得 16 元代金券：用户（含机构用户）完成实名认证后，进入活动中心，并在认证专享礼页面领取 1 张 16 元通用代金券。"
     }
    ],
    "overage": "auto_paid",
@@ -5823,6 +8774,330 @@
      "No training on user data; inputs and outputs are not used to improve models (§9(3))",
      "The service is in beta with no availability commitment and is not meant for business-critical use (§2(4))",
      "Paid models return 402 when credit is insufficient; free models are not affected"
+    ]
+   }
+  },
+  {
+   "id": "speka",
+   "name": "Speka",
+   "homepage": "https://speka.me",
+   "region": "global",
+   "api_usable": true,
+   "status": "verified",
+   "last_verified": "2026-11-25",
+   "summary": "OpenAI 兼容的模型网关，注册即送一次性 1 美元额度，无需信用卡；免费档每分钟 2 次请求、1 个 Key，只能调用单价不超过每百万 token 1 美元的模型。",
+   "api": {
+    "protocol": [
+     "openai"
+    ],
+    "base_url": "https://speka.me/v1",
+    "models_access": "paid",
+    "quota_models": [
+     "nvidia/nemotron-3-super-120b-a12b",
+     "nvidia/nemotron-3-nano-30b-a3b",
+     "nvidia/llama-3.3-nemotron-super-49b-v1.5",
+     "nvidia/nvidia-nemotron-nano-9b-v2",
+     "meta/llama-3.3-70b-instruct",
+     "meta/llama-3.1-8b-instruct",
+     "meta/llama-3.2-3b-instruct",
+     "mistralai/mistral-nemotron",
+     "mistralai/mistral-medium-3.5-128b",
+     "stepfun-ai/step-3.7-flash",
+     "openai/gpt-oss-120b",
+     "openai/gpt-oss-20b",
+     "poolside/laguna-xs-2.1",
+     "meta/llama-3.2-90b-vision-instruct",
+     "nvidia/nemotron-nano-12b-v2-vl",
+     "meta/llama-3.2-11b-vision-instruct"
+    ]
+   },
+   "signup": {
+    "url": "https://speka.me/signup",
+    "requires": [
+     "email"
+    ],
+    "notes": "注册页写明无需信用卡；注册后自动生成一个 API Key，只显示一次。注册页默认勾选“在社区动态中显示邮箱”，可取消。"
+   },
+   "quotas": [
+    {
+     "unit": "usd",
+     "amount": 1,
+     "period": "one-time",
+     "scope": "account",
+     "new_users": true,
+     "models": "单价不超过每百万 token 1 美元的在线模型",
+     "evidence": "https://speka.me/",
+     "quote": "Free to start — $1 lifetime credit on every account. No credit card required.",
+     "note": "一次性额度，不按月刷新（线索中“每月”的说法与官网不符）。官网写“every live model priced up to $1 / 1M tokens”，quota_models 按输入、输出单价都不超过 1 美元整理，属本条目的理解。"
+    },
+    {
+     "unit": "requests",
+     "amount": 2,
+     "period": "minute",
+     "scope": "account",
+     "condition": "免费档",
+     "evidence": "https://speka.me/",
+     "quote": "You get a $1 lifetime usage credit, 1 API key, 2 requests per minute, and every live model priced up to $1 per 1M tokens — enough to prototype and test."
+    }
+   ],
+   "overage": "blocked",
+   "expires": null,
+   "onboarding": {
+    "level": "L2",
+    "key_page": "https://speka.me/dashboard/keys",
+    "key_pattern": "sk-speka-live-"
+   },
+   "terms": [
+    {
+     "point": "禁止通过轮换 Key、刷请求或代理绕过速率限制和额度，违者可能被停用账号",
+     "url": "https://speka.me/acceptable-use"
+    },
+    {
+     "point": "禁止转售原始 API 访问",
+     "url": "https://speka.me/acceptable-use"
+    },
+    {
+     "point": "官方称不保存提示词内容，也不用于训练模型",
+     "url": "https://speka.me/terms"
+    },
+    {
+     "point": "部分模型许可限制商用（如 FLUX.1 [dev]），使用前需自行核对模型许可",
+     "url": "https://speka.me/acceptable-use"
+    }
+   ],
+   "tags": [
+    "聚合",
+    "新人赠送"
+   ],
+   "sources": [
+    "https://speka.me/",
+    "https://speka.me/signup",
+    "https://speka.me/docs",
+    "https://speka.me/models",
+    "https://speka.me/terms",
+    "https://speka.me/acceptable-use",
+    "https://speka.me/privacy"
+   ],
+   "en": {
+    "summary": "OpenAI-compatible model gateway; sign-up gives a one-time $1 credit with no credit card. The free tier allows 2 requests per minute, 1 key, and only models priced up to $1 per 1M tokens.",
+    "signup_notes": "The sign-up page says no card is required; an API key is created automatically after sign-up and shown only once. The sign-up form pre-ticks showing your email in the community feed; you can untick it.",
+    "tags": [
+     "Aggregator",
+     "New-user credit"
+    ],
+    "quotas": [
+     {
+      "models": "Live models priced up to $1 per 1M tokens",
+      "note": "One-time credit, not refreshed monthly (the lead's \"monthly\" claim does not match the official site). The site says \"every live model priced up to $1 / 1M tokens\"; quota_models lists models whose input and output prices are both at most $1, which is this entry's reading."
+     },
+     {
+      "condition": "Free tier"
+     }
+    ],
+    "terms": [
+     "Bypassing rate limits or quotas through key rotation, request flooding or proxy routing is prohibited and may lead to suspension",
+     "Reselling raw API access is prohibited",
+     "The provider says it does not store prompt content or use it to train models",
+     "Some model licenses restrict commercial use (e.g. FLUX.1 [dev]); check the model license yourself"
+    ]
+   }
+  },
+  {
+   "id": "stepfun",
+   "name": "StepFun",
+   "name_zh": "阶跃星辰",
+   "homepage": "https://www.stepfun.com",
+   "region": "cn",
+   "api_usable": true,
+   "status": "verified",
+   "last_verified": "2026-11-23",
+   "summary": "StepAudio 3 系列预览模型限时免费，官方未公布具体额度上限，限免至 2026-11-23 上午 11:59:59（北京时间）结束。",
+   "api": {
+    "protocol": [
+     "openai"
+    ],
+    "base_url": "https://api.stepfun.com/v1",
+    "free_models": [
+     "stepaudio-3-gen-preview",
+     "stepaudio-3-music-preview",
+     "stepaudio-3-realtime-preview",
+     "stepaudio-3-chat-preview"
+    ],
+    "models_access": "paid"
+   },
+   "signup": {
+    "url": "https://account.stepfun.com/login",
+    "requires": [
+     "phone_cn",
+     "email"
+    ],
+    "min_age": 18,
+    "notes": "支持手机号或邮箱注册，需阅读并同意用户协议与隐私条款。"
+   },
+   "quotas": [
+    {
+     "unit": "tokens",
+     "amount": null,
+     "period": "one-time",
+     "scope": "account",
+     "models": "stepaudio-3-gen-preview, stepaudio-3-music-preview, stepaudio-3-realtime-preview, stepaudio-3-chat-preview",
+     "evidence": "https://platform.stepfun.com/docs/zh/guides/pricing/details.md",
+     "quote": "适用限时免费政策的模型限免至北京时间 2026 年 11 月 23 日上午11:59:59",
+     "note": "官方未公布具体额度上限，仅说明限免期内免费；限免到期后预览版本下线并新增正式付费版本。"
+    }
+   ],
+   "overage": "blocked",
+   "ended": "2026-11-23",
+   "ends": "2026-11-23",
+   "onboarding": {
+    "level": "L2",
+    "key_page": "https://platform.stepfun.com/interface-key"
+   },
+   "terms": [
+    {
+     "point": "禁止用提示词和输出训练 AI 模型（模型抓取）（2.2.3(3)）",
+     "url": "https://platform.stepfun.com/docs/zh/agreement/userservice"
+    },
+    {
+     "point": "禁止绕过安全或隐私过滤机制（2.2.3(9)）",
+     "url": "https://platform.stepfun.com/docs/zh/agreement/userservice"
+    },
+    {
+     "point": "部分服务需完成实名认证，未认证可能限制使用（1.2.1）",
+     "url": "https://platform.stepfun.com/docs/zh/agreement/userservice"
+    },
+    {
+     "point": "需年满 18 岁（1.1.1）",
+     "url": "https://platform.stepfun.com/docs/zh/agreement/userservice"
+    }
+   ],
+   "tags": [
+    "限时免费",
+    "语音模型"
+   ],
+   "sources": [
+    "https://platform.stepfun.com/docs/zh/guides/pricing/details.md",
+    "https://platform.stepfun.com/docs/zh/guides/models/stepaudio-3-gen.md",
+    "https://platform.stepfun.com/docs/zh/guides/models/stepaudio-3-music.md",
+    "https://platform.stepfun.com/docs/zh/agreement/userservice"
+   ],
+   "en": {
+    "summary": "StepAudio 3 series preview models are free for a limited time; the official pages do not state a specific quota, and the free period ends at 11:59:59 AM Beijing time on 2026-11-23.",
+    "signup_notes": "Sign up with a phone number or email; you must read and agree to the user agreement and privacy policy.",
+    "tags": [
+     "Limited-time free",
+     "Voice models"
+    ],
+    "quotas": [
+     {
+      "models": "stepaudio-3-gen-preview, stepaudio-3-music-preview, stepaudio-3-realtime-preview, stepaudio-3-chat-preview",
+      "note": "No specific quota is published; the official pages only state the models are free during the limited-time period. After the free period ends, the preview versions are retired and formal paid versions are added."
+     }
+    ],
+    "terms": [
+     "Do not use prompts and outputs to train AI models (model scraping) (2.2.3(3))",
+     "Do not bypass safety or privacy filters (2.2.3(9))",
+     "Some services require real-name verification; failing it may restrict use (1.2.1)",
+     "You must be at least 18 years old (1.1.1)"
+    ]
+   }
+  },
+  {
+   "id": "streamlake",
+   "name": "StreamLake Vanchin",
+   "name_zh": "快手万擎",
+   "homepage": "https://www.streamlake.com",
+   "region": "cn",
+   "api_usable": true,
+   "status": "verified",
+   "last_verified": "2026-11-24",
+   "ends": "2026-12-31",
+   "summary": "活动期间（2026-09-07 至 2026-12-31）首次开通万擎并完成实名认证的用户获赠 ¥20 代金券，可用于在线推理和 API 调用，30 天内有效；平台本身按量付费，没有长期免费额度。",
+   "api": {
+    "protocol": [
+     "openai"
+    ],
+    "base_url": "https://wanqing.streamlakeapi.com/api/gateway/v1/endpoints",
+    "models_access": "paid",
+    "free_model_rule": "没有免费模型；请求里的 model 需填写在控制台创建的推理接入点 ID（形如 ep-xxx），不是通用模型名"
+   },
+   "signup": {
+    "url": "https://console.streamlake.com/console/user/sign-up/tenant",
+    "requires": [
+     "phone_cn",
+     "real_name"
+    ],
+    "notes": "手机号（+86）注册；领取代金券须完成实名认证并开通万擎；调用前需在控制台创建推理接入点"
+   },
+   "quotas": [
+    {
+     "unit": "cny",
+     "amount": 20,
+     "period": "one-time",
+     "scope": "account",
+     "new_users": true,
+     "expires_days": 30,
+     "condition": "活动期间首次开通万擎且已实名认证；同一实名身份只能领取 1 次",
+     "models": "在线推理（含模型广场体验与 API 调用）",
+     "note": "自发放之日起 30 个自然日有效，逾期作废；活动时间 2026-09-07 至 2026-12-31；2026-08-06 至 09-06 开通的用户也视为新户",
+     "evidence": "https://www.streamlake.com/marketing/wanqing-privilege",
+     "quote": "资格确认后，¥20 代金券将自动发放至账户内，无需手动领取。"
+    }
+   ],
+   "overage": "unknown",
+   "onboarding": {
+    "level": "L3",
+    "key_page": "https://console.streamlake.com/wanqing/inference/list"
+   },
+   "terms": [
+    {
+     "point": "同一实名认证身份视为同一账号，每个账号仅可领取 1 次；批量注册或虚假认证会被取消资格并收回已发放的权益",
+     "url": "https://www.streamlake.com/marketing/wanqing-privilege"
+    },
+    {
+     "point": "不得频繁注册或批量注册账号，不得把账号赠与、借用、出租、转让或出售给他人",
+     "url": "https://www.streamlake.com/document/POL/16u3z8"
+    },
+    {
+     "point": "未经许可不得使用自动化程序、爬虫等工具接入平台或服务",
+     "url": "https://www.streamlake.com/document/POL/16u3z8"
+    },
+    {
+     "point": "服务通过中国境内设施提供，适用中国大陆法律",
+     "url": "https://www.streamlake.com/document/POL/16u3z8"
+    }
+   ],
+   "tags": [
+    "新人赠送",
+    "限时免费"
+   ],
+   "sources": [
+    "https://www.streamlake.com/marketing/wanqing-privilege",
+    "https://www.streamlake.com/product/wanqing",
+    "https://www.streamlake.com/document/WANQING/me6z3u08sjus2mzplbj",
+    "https://www.streamlake.com/document/WANQING/mdsosw46egl9m9lfbg",
+    "https://www.streamlake.com/document/POL/16u3z8"
+   ],
+   "en": {
+    "summary": "During the campaign (2026-09-07 to 2026-12-31), users who activate Vanchin for the first time and pass identity verification get a ¥20 voucher for online inference and API calls, valid for 30 days; otherwise the platform is pay-as-you-go with no ongoing free quota.",
+    "signup_notes": "Sign up with a mainland China (+86) phone number; the voucher requires identity verification and activating Vanchin; you must create an inference endpoint in the console before calling the API",
+    "free_model_rule": "No free models; the model field must be an inference endpoint ID created in the console (like ep-xxx), not a generic model name",
+    "tags": [
+     "New-user credits",
+     "Limited-time free"
+    ],
+    "quotas": [
+     {
+      "models": "Online inference (model playground and API calls)",
+      "condition": "First-time Vanchin activation during the campaign with identity verification; one voucher per verified identity",
+      "note": "Valid for 30 calendar days from issue, then void; campaign runs 2026-09-07 to 2026-12-31; users who activated between 2026-08-06 and 09-06 also count as new"
+     }
+    ],
+    "terms": [
+     "One verified identity counts as one account and can claim once; bulk sign-ups or fake verification lose eligibility and the benefits are taken back",
+     "No frequent or bulk registration; accounts may not be given, lent, rented, transferred or sold to others",
+     "No automated programs or crawlers may access the platform or service without permission",
+     "The service runs on facilities in mainland China and mainland China law applies"
     ]
    }
   },
@@ -5993,6 +9268,190 @@
      "A free key asking for another model gets a 402 with a top-up link, not a charge",
      "Prompts are not used for training, and prompt and completion text of API requests is not stored",
      "The free model runs only on GPUs the platform operates; 503 when none is online"
+    ]
+   }
+  },
+  {
+   "id": "taotoken",
+   "name": "Taotoken",
+   "homepage": "https://taotoken.net",
+   "region": "cn",
+   "api_usable": true,
+   "status": "verified",
+   "last_verified": "2026-11-26",
+   "summary": "CSDN 旗下北京灵明智码运营的模型聚合平台，按量付费；模型列表中每个模型标有一次性赠送 Token，多数为 100,000，新用户横幅称注册赠送百万 Token，无需充值。",
+   "api": {
+    "protocol": [
+     "openai"
+    ],
+    "base_url": "https://api.taotoken.net/v1",
+    "models_access": "quota",
+    "models": [
+     "deepseek-v4.1-flash-1017"
+    ]
+   },
+   "signup": {
+    "url": "https://taotoken.net/",
+    "requires": [
+     "phone_cn"
+    ],
+    "notes": "使用手机验证码登录/注册，也可用 CSDN 账号授权登录；用户协议写明可能需要完成实名核验。"
+   },
+   "quotas": [
+    {
+     "unit": "tokens",
+     "amount": 100000,
+     "period": "one-time",
+     "scope": "model",
+     "models": "模型列表中的多数文本模型（Qwen3.8-27B、Doubao-Seed-Evolving 标为 10,000，Kimi-K3 标为 20,000）",
+     "new_users": true,
+     "note": "官网新人横幅写“新人专属福利 百万Token 可直接用于 API 调用，无需充值”，未说明与各模型赠送额度的关系和有效期；赠送用完后按价格从账户余额扣费。",
+     "evidence": "https://taotoken.net/models",
+     "quote": "赠送：100,000 (Tokens)"
+    }
+   ],
+   "overage": "unknown",
+   "expires": null,
+   "onboarding": {
+    "level": "L2",
+    "key_page": "https://taotoken.net/console"
+   },
+   "terms": [
+    {
+     "point": "不得出借、转让、出售账户（3.2）",
+     "url": "https://taotoken.net/agreement/user-service"
+    },
+    {
+     "point": "禁止绕过计费、配额、速率限制或通过技术手段套取平台资源（第五条）",
+     "url": "https://taotoken.net/agreement/user-service"
+    },
+    {
+     "point": "数据处理可能发生在中国境内或境外云服务区域（7.3）",
+     "url": "https://taotoken.net/agreement/user-service"
+    }
+   ],
+   "tags": [
+    "聚合",
+    "新人赠送"
+   ],
+   "sources": [
+    "https://taotoken.net/",
+    "https://taotoken.net/models",
+    "https://taotoken.net/models/detail/chat",
+    "https://taotoken.net/token-plan",
+    "https://taotoken.net/agreement/user-service"
+   ],
+   "en": {
+    "summary": "Model aggregation platform run by Beijing Lingming Zhima (a CSDN company), pay-as-you-go; each model on the model list shows a one-time token grant, mostly 100,000, and the new-user banner says sign-up gives a million tokens usable via API without top-up.",
+    "signup_notes": "Sign up / log in with a phone verification code or via CSDN account authorization; the user agreement says real-name verification may be required.",
+    "tags": [
+     "Aggregator",
+     "New-user credits"
+    ],
+    "quotas": [
+     {
+      "models": "Most text models on the model list (Qwen3.8-27B and Doubao-Seed-Evolving show 10,000, Kimi-K3 shows 20,000)",
+      "note": "The new-user banner says \"a million tokens usable for API calls, no top-up needed\" but does not explain how it relates to the per-model grants or when it expires; after the grant is used, calls are charged to the account balance."
+     }
+    ],
+    "terms": [
+     "Accounts may not be lent, transferred or sold (3.2)",
+     "Bypassing billing, quotas or rate limits, or extracting platform resources by technical means, is prohibited (Art. 5)",
+     "Data may be processed in mainland China or in overseas cloud regions (7.3)"
+    ]
+   }
+  },
+  {
+   "id": "telnyx",
+   "name": "Telnyx",
+   "homepage": "https://telnyx.com",
+   "region": "global",
+   "api_usable": true,
+   "status": "verified",
+   "last_verified": "2026-11-26",
+   "summary": "通信云平台，提供 OpenAI 兼容的推理 API（GLM、Kimi、DeepSeek、Qwen 等开源模型）；试用账号赠送 5 美元测试额度，可用于推理，用完需付费充值。",
+   "api": {
+    "protocol": [
+     "openai",
+     "anthropic"
+    ],
+    "base_url": "https://api.telnyx.com/v2/ai/openai",
+    "models_access": "quota"
+   },
+   "signup": {
+    "url": "https://telnyx.com/sign-up",
+    "requires": [
+     "email"
+    ],
+    "notes": "注册需验证邮箱并通过风控检查（域名、IP 信誉、reCAPTCHA 等），部分情况要求验证手机号或 KYC。预试用（Pretrial）账号不能使用推理；升级到试用（Trial）账号需通过欺诈审核（LinkedIn/GitHub 验证或 AI agent 评估）。"
+   },
+   "quotas": [
+    {
+     "unit": "usd",
+     "amount": 5,
+     "period": "one-time",
+     "scope": "account",
+     "new_users": true,
+     "condition": "试用（Trial）账号；预试用账号的 25 美元 AI 额度不能用于推理",
+     "note": "测试额度与短信、语音等其他产品共用；按各模型公布的每百万 token 价格扣费。服务条款写明赠送的额度六个月内未用完可被收回。",
+     "evidence": "https://telnyx.com/agent-signup.md",
+     "quote": "A new account starts with $5 in free credit."
+    }
+   ],
+   "overage": "unknown",
+   "onboarding": {
+    "level": "L2",
+    "key_page": "https://portal.telnyx.com/#/app/api-keys"
+   },
+   "terms": [
+    {
+     "point": "试用账号同一时间只能有 1 个 API Key，Telnyx 可不经通知修改限制",
+     "url": "https://developers.telnyx.com/docs/account-setup/levels-and-capabilities/trial.md"
+    },
+    {
+     "point": "每次注册都会经过域名、IP 信誉、注册来源等风控检查，任一项不通过即注册失败",
+     "url": "https://developers.telnyx.com/docs/account-setup/signup.md"
+    },
+    {
+     "point": "赠送的促销或使用额度六个月内未使用，Telnyx 可收回（6.5）",
+     "url": "https://telnyx.com/terms-and-conditions-of-service"
+    },
+    {
+     "point": "余额为负时 Telnyx 可暂停全部服务（4.2）",
+     "url": "https://telnyx.com/terms-and-conditions-of-service"
+    }
+   ],
+   "tags": [
+    "新人赠送",
+    "试用"
+   ],
+   "sources": [
+    "https://telnyx.com/pricing/inference-api",
+    "https://developers.telnyx.com/docs/inference/getting-started",
+    "https://developers.telnyx.com/docs/inference/rate-limits",
+    "https://developers.telnyx.com/docs/account-setup/levels-and-capabilities/trial.md",
+    "https://developers.telnyx.com/docs/account-setup/levels-and-capabilities/pretrial.md",
+    "https://developers.telnyx.com/docs/account-setup/account-upgrade.md",
+    "https://telnyx.com/agent-signup.md"
+   ],
+   "en": {
+    "summary": "Communications cloud with an OpenAI-compatible inference API (open models such as GLM, Kimi, DeepSeek, Qwen); trial accounts get $5 in testing credit usable for inference, after which paid top-up is needed.",
+    "signup_notes": "Sign-up requires a verified email and passes trust and safety checks (domain, IP reputation, reCAPTCHA, etc.); some sign-ups must verify a mobile number or pass KYC. Pretrial accounts cannot use Inference; moving to Trial requires passing a fraud review (LinkedIn/GitHub verification or AI agent evaluation).",
+    "tags": [
+     "New-user credits",
+     "Trial"
+    ],
+    "quotas": [
+     {
+      "condition": "Trial accounts; the $25 pretrial AI credit cannot be used for Inference",
+      "note": "The testing credit is shared with SMS, voice and other products; charged at each model's published per-million-token price. The terms say granted credits unused within six months may be withdrawn."
+     }
+    ],
+    "terms": [
+     "Trial accounts may hold only 1 API key at a time; Telnyx may change limits without notice",
+     "Every sign-up goes through checks on domain, IP reputation, signup origin and more; failing any one blocks the sign-up",
+     "Promotional or usage credits unused within six months may be withdrawn (6.5)",
+     "Telnyx may suspend all services if the balance goes negative (4.2)"
     ]
    }
   },
@@ -6208,6 +9667,277 @@
    }
   },
   {
+   "id": "token8341",
+   "name": "8341TokenFactory",
+   "name_zh": "8341Token工厂",
+   "homepage": "https://token8341.com",
+   "region": "cn",
+   "api_usable": true,
+   "status": "verified",
+   "last_verified": "2026-11-26",
+   "summary": "按量计费的大模型 API 聚合平台，新用户注册赠送 ¥0.5 体验额度，无需绑定信用卡；没有长期免费模型。",
+   "api": {
+    "protocol": [
+     "openai"
+    ],
+    "base_url": "https://www.token8341.com/v1",
+    "models_access": "quota"
+   },
+   "signup": {
+    "url": "https://token8341.com",
+    "requires": [
+     "email"
+    ],
+    "notes": "服务条款要求用真实有效的邮箱注册；首次充值满 ¥5 另送 ¥5，需付费，不算免费额度。"
+   },
+   "quotas": [
+    {
+     "unit": "cny",
+     "amount": 0.5,
+     "period": "one-time",
+     "scope": "account",
+     "new_users": true,
+     "condition": "新注册用户",
+     "note": "体验额度不可提现、不可转让；有效期官方未公布；余额不足时接口返回 402。",
+     "evidence": "https://token8341.com/docs",
+     "quote": "新用户注册后将获得 ¥0.5 免费体验额度；首次充值满 ¥5 额外赠送 ¥5，无需绑定信用卡即可开始使用。"
+    }
+   ],
+   "overage": "blocked",
+   "expires": null,
+   "onboarding": {
+    "level": "L2"
+   },
+   "terms": [
+    {
+     "point": "禁止以自动化手段批量注册、领取赠额或绕过计费，违反可暂停或终止账号",
+     "url": "https://token8341.com/terms"
+    },
+    {
+     "point": "禁止将账号转售、出租或出借给第三方用于违法用途",
+     "url": "https://token8341.com/terms"
+    },
+    {
+     "point": "免费赠送额度部分不提供可用性承诺",
+     "url": "https://token8341.com/terms"
+    }
+   ],
+   "tags": [
+    "聚合",
+    "新人赠送"
+   ],
+   "sources": [
+    "https://token8341.com",
+    "https://token8341.com/docs",
+    "https://token8341.com/pricing",
+    "https://token8341.com/terms"
+   ],
+   "en": {
+    "summary": "Pay-as-you-go LLM API aggregator; new users get ¥0.5 trial credit on sign-up with no credit card needed; no long-term free models.",
+    "signup_notes": "The terms require a real, valid email to register; the extra ¥5 on a first top-up of ¥5 or more requires payment and is not a free quota.",
+    "tags": [
+     "Aggregator",
+     "New-user credit"
+    ],
+    "quotas": [
+     {
+      "condition": "Newly registered users",
+      "note": "Trial credit cannot be withdrawn or transferred; expiry not published; the API returns 402 when the balance runs out."
+     }
+    ],
+    "terms": [
+     "Batch registration by automated means, harvesting credits or bypassing billing is prohibited; accounts may be suspended or terminated",
+     "Reselling, renting or lending the account to third parties for illegal purposes is prohibited",
+     "No availability commitment for the free credit portion"
+    ]
+   }
+  },
+  {
+   "id": "tokenrouter",
+   "name": "TokenRouter",
+   "homepage": "https://www.tokenrouter.com",
+   "region": "global",
+   "api_usable": true,
+   "status": "unconfirmed",
+   "last_verified": "2026-11-26",
+   "summary": "多模型聚合网关，模型页把 deepseek/deepseek-v4.1-flash-1017-free 标为免费（输入输出 $0），官方未公布调用次数上限；其余模型按量付费。",
+   "api": {
+    "protocol": [
+     "openai"
+    ],
+    "base_url": "https://api.tokenrouter.com/v1",
+    "models_access": "paid",
+    "free_models": [
+     "deepseek/deepseek-v4.1-flash-1017-free"
+    ]
+   },
+   "signup": {
+    "url": "https://tokenrouter.com",
+    "requires": [
+     "email"
+    ],
+    "notes": "邮箱注册后在控制台创建 API Key；按账户余额预付扣费。"
+   },
+   "quotas": [
+    {
+     "unit": "requests",
+     "amount": null,
+     "period": "day",
+     "scope": "account",
+     "models": "deepseek/deepseek-v4.1-flash-1017-free",
+     "note": "模型页标价输入、输出均为 $0.0000，标注 Free Self-hosted Inference；官方未公布次数或 token 上限。并发上限按账户实时余额分档，表中最低档为余额大于 $0，余额为 0 的账号能否调用官方未说明。",
+     "evidence": "https://www.tokenrouter.com/models/deepseek/deepseek-v4.1-flash-1017-free",
+     "quote": "Input Price:$0.0000 Output Price:$0.0000"
+    },
+    {
+     "unit": "requests",
+     "amount": null,
+     "period": "one-time",
+     "scope": "account",
+     "models": "z-ai/glm-5.3",
+     "note": "GLM 5.3 上线首周（至 9 月 4 日）对所有账号免费，活动已结束，之后按标准价收费。",
+     "evidence": "https://www.tokenrouter.com/blog/tokenrouter-announces-day-0-availability-of-self-hosted-glm-5-3",
+     "quote": "GLM 5.3 is available at no cost on TokenRouter for one week from launch, through September 4.",
+     "ended": "2026-09-04"
+    }
+   ],
+   "overage": "unknown",
+   "onboarding": {
+    "level": "L2",
+    "key_page": "https://www.tokenrouter.com/console/token"
+   },
+   "terms": [
+    {
+     "point": "每个账号的最大并发请求数按实时余额分档，余额 $0 以上至 $10 为 5 个并发；超出可能排队、限流或被拒绝",
+     "url": "https://www.tokenrouter.com/docs/rate-limits-concurrency"
+    },
+    {
+     "point": "请求转发到第三方模型商时，数据处理受该模型商条款约束；平台称不保存提示词和回复内容",
+     "url": "https://tokenrouter.com"
+    }
+   ],
+   "tags": [
+    "聚合",
+    "免费模型"
+   ],
+   "sources": [
+    "https://tokenrouter.com",
+    "https://www.tokenrouter.com/models?free=true",
+    "https://www.tokenrouter.com/docs/rate-limits-concurrency",
+    "https://www.tokenrouter.com/blog/tokenrouter-announces-day-0-availability-of-self-hosted-glm-5-3"
+   ],
+   "en": {
+    "summary": "Multi-model aggregator gateway; the model page lists deepseek/deepseek-v4.1-flash-1017-free as free ($0 input and output), with no published request limit; other models are pay-as-you-go.",
+    "signup_notes": "Sign up with email and create an API key in the console; usage is deducted from a prepaid balance.",
+    "tags": [
+     "Aggregator",
+     "Free model"
+    ],
+    "quotas": [
+     {
+      "models": "deepseek/deepseek-v4.1-flash-1017-free",
+      "note": "The model page prices input and output at $0.0000 and labels it Free Self-hosted Inference; no request or token limit is published. Concurrency is tiered by real-time balance and the lowest listed tier is a balance above $0; whether zero-balance accounts can call it is not stated."
+     },
+     {
+      "models": "z-ai/glm-5.3",
+      "note": "GLM 5.3 was free for all accounts during its first week (through September 4); the promotion has ended and standard pricing applies."
+     }
+    ],
+    "terms": [
+     "Maximum concurrent requests per account are tiered by real-time balance; over $0 up to $10 allows 5; excess requests may be queued, throttled or rejected",
+     "When requests go to third-party model providers, their terms govern data handling; the platform says it does not store prompts or completions"
+    ]
+   }
+  },
+  {
+   "id": "unisound",
+   "name": "Unisound MaaS",
+   "name_zh": "云知声 MaaS 平台",
+   "homepage": "https://maas.unisound.com",
+   "region": "cn",
+   "api_usable": true,
+   "status": "unconfirmed",
+   "last_verified": "2026-11-26",
+   "summary": "云知声 MaaS 平台的 U Plan 订阅设有可免费领取的 Free 档，额度和周期官方页面未公布；按量计费的模型需付费。",
+   "api": {
+    "protocol": [
+     "openai",
+     "anthropic"
+    ],
+    "base_url": "https://maas-api.unisound.com/v1",
+    "anthropic_base_url": "https://maas-api.unisound.com/anthropic",
+    "models_access": "paid",
+    "quota_models": [
+     "u2-flash",
+     "u2-med"
+    ]
+   },
+   "signup": {
+    "url": "https://maas.unisound.com",
+    "requires": [
+     "phone_cn",
+     "real_name"
+    ],
+    "notes": "手机验证码登录，首次登录自动注册；需完成个人或企业开发者实名认证。U Plan 使用套餐专属 Key（tp- 开头），与按量计费 Key 不通用，仅在套餐有效期内可用。"
+   },
+   "quotas": [
+    {
+     "unit": "requests",
+     "amount": null,
+     "period": "month",
+     "scope": "account",
+     "models": "U Plan 套餐内模型（公告提到 U2-Flash、U2-Med）",
+     "condition": "领取 U Plan Free 档",
+     "note": "官方未公布 Free 档的具体额度、计量单位和周期；周期按 U Plan 付费档按月计价暂填，待核实。",
+     "evidence": "https://maas.unisound.com/docs/guide/quickstart",
+     "quote": "U Plan 正式上线！Free 档免费领，套餐升级限时7折，低至41.3元/月！"
+    }
+   ],
+   "overage": "blocked",
+   "onboarding": {
+    "level": "L2",
+    "key_page": "https://maas.unisound.com"
+   },
+   "terms": [
+    {
+     "point": "U Plan 套餐专属 Key 每账户唯一一把，仅用于套餐额度，套餐有效期结束后不可用",
+     "url": "https://maas.unisound.com/docs/guide/quickstart"
+    },
+    {
+     "point": "有速率限制，例如 u2-flash 每分钟 100 次请求、1000 万 Token",
+     "url": "https://maas.unisound.com/docs/api/rate-limits"
+    }
+   ],
+   "tags": [
+    "试用"
+   ],
+   "sources": [
+    "https://maas.unisound.com/docs",
+    "https://maas.unisound.com/docs/guide/quickstart",
+    "https://maas.unisound.com/docs/api/text/openai-compatible",
+    "https://maas.unisound.com/docs/api/rate-limits",
+    "https://maas.unisound.com/docs/toolAI/codex"
+   ],
+   "en": {
+    "summary": "Unisound MaaS offers a Free tier of its U Plan subscription that can be claimed at no cost; the quota and period are not published on the official pages. Pay-as-you-go models are paid.",
+    "signup_notes": "Sign in with an SMS code (first sign-in creates the account); individual or company developer real-name verification is required. U Plan uses a dedicated plan key (tp- prefix) that is not interchangeable with pay-as-you-go keys and only works while the plan is valid.",
+    "tags": [
+     "Trial"
+    ],
+    "quotas": [
+     {
+      "models": "Models in the U Plan (the notice mentions U2-Flash and U2-Med)",
+      "condition": "Claim the U Plan Free tier",
+      "note": "The official pages do not state the Free tier's amount, unit or period; the monthly period is a placeholder based on the paid U Plan tiers being priced per month, pending confirmation."
+     }
+    ],
+    "terms": [
+     "One dedicated U Plan key per account, only for plan quota, unusable after the plan expires",
+     "Rate limits apply, e.g. u2-flash at 100 requests and 10,000,000 tokens per minute"
+    ]
+   }
+  },
+  {
    "id": "vectoree",
    "name": "Vectoree",
    "homepage": "https://vectoree.ai",
@@ -6309,8 +10039,8 @@
    "region": "global",
    "api_usable": true,
    "status": "verified",
-   "last_verified": "2026-11-22",
-   "summary": "聚合网关，每个 Vercel 团队每月有一笔免费额度，可调用免费档模型子集。",
+   "last_verified": "2026-11-25",
+   "summary": "聚合网关，每个 Vercel 团队免费档每月含 5 美元额度，只能调用标为 Free Tier 的模型；另有部分模型标价为 0（如 reflection/beam-free、stealth/glyph-cluster）。",
    "api": {
     "protocol": [
      "openai"
@@ -6318,8 +10048,12 @@
     "base_url": "https://ai-gateway.vercel.sh/v1",
     "models_url": "https://ai-gateway.vercel.sh/v1/models",
     "models_access": "paid",
+    "free_models": [
+     "reflection/beam-free",
+     "stealth/glyph-cluster"
+    ],
     "free_pattern": "-free$",
-    "free_model_rule": "月度免费额度只能用于官网模型列表中标为 Free Tier 的模型子集；另有部分模型限时标价为 0"
+    "free_model_rule": "月度免费额度只能用于官网模型列表中标为 Free Tier 的模型子集；另有部分模型标价为 0（目前官网模型页显示 reflection/beam-free 与 stealth/glyph-cluster 为 Free），未公布截止日期"
    },
    "signup": {
     "url": "https://vercel.com/signup",
@@ -6327,17 +10061,18 @@
      "email",
      "card"
     ],
-    "notes": "团队需先添加有效支付方式才能使用免费额度；购买 AI Gateway 额度后转为付费档，每月免费额度不再适用。"
+    "notes": "团队需先添加有效支付方式才能使用免费额度；免费档不支持 BYOK；购买 AI Gateway 额度后转为付费档，每月免费额度不再适用。"
    },
    "quotas": [
     {
      "unit": "usd",
-     "amount": null,
+     "amount": 5,
      "period": "month",
      "scope": "org",
      "condition": "团队未购买过 AI Gateway 额度",
-     "note": "官方文档未写明金额；免费额度从首次请求开始计算，不是到期即止的试用",
-     "evidence": "https://vercel.com/docs/ai-gateway/pricing"
+     "note": "免费额度从首次请求开始计算，不是到期即止的试用；仅限 Free Tier 模型",
+     "evidence": "https://vercel.com/docs/ai-gateway/pricing",
+     "quote": "$5/month included"
     },
     {
      "unit": "requests",
@@ -6345,7 +10080,8 @@
      "period": "minute",
      "scope": "model",
      "note": "免费档按模型限速，低于付费档，超出返回 429；官方不公布具体数值",
-     "evidence": "https://vercel.com/docs/ai-gateway/rate-limits"
+     "evidence": "https://vercel.com/docs/ai-gateway/rate-limits",
+     "quote": "On the free tier, AI Gateway enforces a lower limit per model, and exceeding it rejects further requests to that model until your request rate drops."
     }
    ],
    "overage": "blocked",
@@ -6364,31 +10100,39 @@
     {
      "point": "各模型的使用还须遵守对应提供方条款及 Vercel AI Product Terms",
      "url": "https://vercel.com/docs/ai-gateway"
+    },
+    {
+     "point": "stealth/glyph-cluster 为匿名早期访问模型，提示词和输出会被提供方保留",
+     "url": "https://vercel.com/ai-gateway/models/glyph-cluster"
     }
    ],
    "tags": [
     "聚合",
-    "每月赠送"
+    "每月赠送",
+    "免费模型"
    ],
    "sources": [
     "https://vercel.com/docs/ai-gateway/pricing",
     "https://vercel.com/docs/ai-gateway/faq",
     "https://vercel.com/docs/ai-gateway/rate-limits",
     "https://vercel.com/docs/ai-gateway/authentication-and-byok/api-keys",
-    "https://vercel.com/ai-gateway"
+    "https://vercel.com/ai-gateway",
+    "https://vercel.com/ai-gateway/models/beam-free",
+    "https://vercel.com/ai-gateway/models/glyph-cluster"
    ],
    "en": {
-    "summary": "Aggregator gateway; every Vercel team gets a monthly free credit for a subset of free-tier models.",
-    "signup_notes": "The team must add a valid payment method before free credits can be used; buying AI Gateway credits moves the team to the paid tier and the monthly free credit no longer applies.",
-    "free_model_rule": "The monthly free credit only covers the subset marked Free Tier in the model list; some models are also temporarily priced at $0",
+    "summary": "Aggregator gateway; every Vercel team's free tier includes $5 of credit per month, usable only on models marked Free Tier; some models are also priced at $0 (e.g. reflection/beam-free, stealth/glyph-cluster).",
+    "signup_notes": "The team must add a valid payment method before free credits can be used; BYOK is not available on the free tier; buying AI Gateway credits moves the team to the paid tier and the monthly free credit no longer applies.",
+    "free_model_rule": "The monthly free credit only covers the subset marked Free Tier in the model list; some models are also priced at $0 (currently reflection/beam-free and stealth/glyph-cluster are shown as Free on the official model pages), with no end date announced",
     "tags": [
      "Aggregator",
-     "Monthly credits"
+     "Monthly credits",
+     "Free models"
     ],
     "quotas": [
      {
       "condition": "The team has never bought AI Gateway credits",
-      "note": "The amount is not stated in the docs; the credit starts with the first request and is not an expiring trial"
+      "note": "The credit starts with the first request and is not an expiring trial; Free Tier models only"
      },
      {
       "note": "The free tier is rate-limited per model, below the paid tier, and returns 429 when exceeded; exact numbers are not published"
@@ -6396,7 +10140,103 @@
     ],
     "terms": [
      "Without a payment method requests return 403 customer_verification_required; without a positive balance they return 402",
-     "Use of each model is also subject to its provider's terms and Vercel's AI Product Terms"
+     "Use of each model is also subject to its provider's terms and Vercel's AI Product Terms",
+     "stealth/glyph-cluster is an anonymous early-access model; prompts and outputs are retained by the provider"
+    ]
+   }
+  },
+  {
+   "id": "vikasit-ai",
+   "name": "Vikasit AI",
+   "homepage": "https://vikasit.ai",
+   "region": "global",
+   "api_usable": true,
+   "status": "verified",
+   "last_verified": "2026-11-26",
+   "summary": "印度公司 Chandorkar Technologies 的 OpenAI 兼容推理 API，用 GitHub 登录后可免费调用 vikasit-nova，每个账号每天 200 万 tokens，不需要信用卡；其他模型按量付费。",
+   "api": {
+    "protocol": [
+     "openai"
+    ],
+    "base_url": "https://api.vikasit.ai/v1",
+    "free_models": [
+     "vikasit-nova"
+    ],
+    "models_access": "paid"
+   },
+   "signup": {
+    "url": "https://vikasit.ai/auth",
+    "requires": [
+     "github"
+    ],
+    "notes": "用 GitHub 账号登录获取 API Key，免费额度不需要信用卡。"
+   },
+   "quotas": [
+    {
+     "unit": "tokens",
+     "amount": 2000000,
+     "period": "day",
+     "scope": "account",
+     "models": "vikasit-nova",
+     "condition": "已登录的开发者账号",
+     "note": "官方注明每日免费额度可能调整，按账号适用合理使用限制，也可能随时调整或取消免费档；重置时间官方未公布。",
+     "evidence": "https://vikasit.ai/inference",
+     "quote": "2,000,000 tokens per day, free"
+    }
+   ],
+   "overage": "unknown",
+   "expires": null,
+   "onboarding": {
+    "level": "L2",
+    "key_page": "https://vikasit.ai/auth"
+   },
+   "terms": [
+    {
+     "point": "禁止绕过用量限制、计费、速率限制或安全控制（第 3 条）",
+     "url": "https://vikasit.ai/terms"
+    },
+    {
+     "point": "未经明确许可禁止转售或再授权服务（第 3 条）",
+     "url": "https://vikasit.ai/terms"
+    },
+    {
+     "point": "免费额度可能变动，按账号适用合理使用限制，官方可随时调整或取消免费档",
+     "url": "https://vikasit.ai/inference"
+    },
+    {
+     "point": "自家付费模型的内容不用于训练；CLI 中由第三方运营的 Free Preview 模型，其运营方可能用请求内容训练",
+     "url": "https://vikasit.ai/privacy"
+    }
+   ],
+   "tags": [
+    "免费模型",
+    "每日赠送"
+   ],
+   "sources": [
+    "https://vikasit.ai",
+    "https://vikasit.ai/inference",
+    "https://vikasit.ai/terms",
+    "https://vikasit.ai/privacy"
+   ],
+   "en": {
+    "summary": "OpenAI-compatible inference API from India's Chandorkar Technologies; after GitHub sign-in, vikasit-nova is free at 2M tokens per account per day with no card required; other models are pay-as-you-go.",
+    "signup_notes": "Sign in with GitHub to get an API key; the free allowance needs no credit card.",
+    "tags": [
+     "Free model",
+     "Daily allowance"
+    ],
+    "quotas": [
+     {
+      "models": "vikasit-nova",
+      "condition": "Signed-in developer accounts",
+      "note": "The provider says the free daily allowance may change, fair-use limits apply per account, and the free tier may be adjusted or retired at any time; reset time not published."
+     }
+    ],
+    "terms": [
+     "Circumventing usage limits, billing, rate limits or security controls is prohibited (section 3)",
+     "Reselling or sublicensing the service is prohibited unless expressly permitted (section 3)",
+     "The free allowance may change, fair-use limits apply per account, and the free tier may be adjusted or retired at any time",
+     "Content sent to paid Vikasit models is not used for training; third-party operators of Free Preview models in the CLI may train on request content"
     ]
    }
   },
@@ -6408,7 +10248,7 @@
    "region": "cn",
    "api_usable": true,
    "status": "verified",
-   "last_verified": "2026-11-19",
+   "last_verified": "2026-11-25",
    "summary": "新用户豆包模型各送 50 万 Token；开启“安心体验模式”可避免产生费用。",
    "api": {
     "protocol": [
@@ -6435,7 +10275,8 @@
      "period": "one-time",
      "scope": "model",
      "evidence": "https://docs.volcengine.com/docs/ark/free-inference-quota",
-     "models": "Doubao-Seed-2.1-pro、Doubao-Seed-2.1-turbo 等 4 款"
+     "models": "Doubao-Seed-2.1-pro、Doubao-Seed-2.1-turbo 等 4 款",
+     "quote": "方舟为新用户提供免费推理试用额度，便于新用户 0 成本学习以及尝试将模型推理能力与业务相结合。"
     }
    ],
    "overage": "manual",
@@ -6466,8 +10307,8 @@
    "region": "cn",
    "api_usable": true,
    "status": "verified",
-   "last_verified": "2026-11-22",
-   "summary": "星火 Lite 轻量模型支持免费使用，可通过兼容 OpenAI 的 HTTP 接口调用。",
+   "last_verified": "2026-11-26",
+   "summary": "星火 Lite 轻量模型支持免费使用，可通过兼容 OpenAI 的 HTTP 接口调用；星辰 MaaS 平台另向注册用户发放 10 亿 Spark-X2.6 tokens 免费额度。",
    "api": {
     "protocol": [
      "openai"
@@ -6483,7 +10324,7 @@
     "requires": [
      "phone"
     ],
-    "notes": "在产品页领取免费额度后，到控制台获取对应版本的 APIPassword"
+    "notes": "在产品页领取免费额度后，到控制台获取对应版本的 APIPassword；Spark-X2.6 注册礼在星辰 MaaS 平台领取"
    },
    "quotas": [
     {
@@ -6493,7 +10334,19 @@
      "scope": "account",
      "models": "lite",
      "evidence": "https://www.xfyun.cn/doc/spark/HTTP%E8%B0%83%E7%94%A8%E6%96%87%E6%A1%A3.html",
+     "quote": "具有更高的响应速度,支持免费使用",
      "note": "官方写明 Lite 支持免费使用；具体并发和日流控上限未在文档写明，超限返回错误码"
+    },
+    {
+     "unit": "tokens",
+     "amount": 1000000000,
+     "period": "one-time",
+     "scope": "account",
+     "models": "Spark-X2.6",
+     "new_users": true,
+     "evidence": "https://maas.xfyun.cn/overview",
+     "quote": "Spark-X2.6赋能开发者 零门槛领取10亿tokens免费额度",
+     "note": "星辰 MaaS 平台注册礼，需在 MaaS 控制台领取，调用走 MaaS 平台而非 spark-api-open 地址；有效期和截止日期页面未写明，领取资格以控制台为准"
     }
    ],
    "overage": "blocked",
@@ -6502,20 +10355,27 @@
     "key_page": "https://console.xfyun.cn/services/cbm"
    },
    "tags": [
-    "免费模型"
+    "免费模型",
+    "新人赠送"
    ],
    "sources": [
-    "https://www.xfyun.cn/doc/spark/HTTP%E8%B0%83%E7%94%A8%E6%96%87%E6%A1%A3.html"
+    "https://www.xfyun.cn/doc/spark/HTTP%E8%B0%83%E7%94%A8%E6%96%87%E6%A1%A3.html",
+    "https://maas.xfyun.cn/overview",
+    "https://www.xfyun.cn/activities/promotion"
    ],
    "en": {
-    "summary": "The lightweight Spark Lite model can be used for free through the OpenAI-compatible HTTP API.",
-    "signup_notes": "Claim the free allowance on the product page, then get the APIPassword for that model version in the console",
+    "summary": "The lightweight Spark Lite model can be used for free through the OpenAI-compatible HTTP API; the Astron MaaS platform also gives registered users a free 1B-token Spark-X2.6 allowance.",
+    "signup_notes": "Claim the free allowance on the product page, then get the APIPassword for that model version in the console; the Spark-X2.6 sign-up gift is claimed on the MaaS platform",
     "tags": [
-     "Free model"
+     "Free model",
+     "New-user gift"
     ],
     "quotas": [
      {
       "note": "The docs state Lite can be used for free; concurrency and daily limits are not stated, and requests over the limit return an error code"
+     },
+     {
+      "note": "Sign-up gift on the Astron MaaS platform, claimed in the MaaS console and used through the MaaS platform rather than the spark-api-open endpoint; validity and end date not stated, eligibility subject to the console"
      }
     ]
    }
@@ -6528,7 +10388,7 @@
    "region": "global",
    "api_usable": true,
    "status": "verified",
-   "last_verified": "2026-11-22",
+   "last_verified": "2026-11-25",
    "summary": "智谱国际站的 GLM-4.7-Flash、GLM-4.5-Flash 和 GLM-4.6V-Flash 三款模型免费调用，按模型限速。",
    "api": {
     "protocol": [
@@ -6563,7 +10423,8 @@
      "scope": "account",
      "evidence": "https://docs.z.ai/guides/overview/pricing",
      "models": "GLM-4.7-Flash、GLM-4.5-Flash、GLM-4.6V-Flash",
-     "note": "价格页标为免费，输入、输出和缓存均不计费；限速数值见控制台 Rate Limits 页"
+     "note": "价格页标为免费，输入、输出和缓存均不计费；限速数值见控制台 Rate Limits 页",
+     "quote": "GLM-4.7-FlashFreeFreeFreeFree"
     }
    ],
    "overage": "blocked",
@@ -6619,6 +10480,223 @@
    }
   },
   {
+   "id": "zenmux",
+   "name": "ZenMux",
+   "homepage": "https://zenmux.ai",
+   "region": "global",
+   "api_usable": true,
+   "status": "verified",
+   "last_verified": "2026-11-26",
+   "summary": "模型聚合网关，模型列表中标为 Free 的几个模型输入输出单价为 0 美元，可用按量付费 API Key 调用；官方未公布这些模型的用量上限，账户余额不能为负。",
+   "api": {
+    "protocol": [
+     "openai",
+     "anthropic",
+     "gemini"
+    ],
+    "base_url": "https://zenmux.ai/api/v1",
+    "anthropic_base_url": "https://zenmux.ai/api/anthropic",
+    "models_url": "https://zenmux.ai/api/v1/models",
+    "models_access": "paid",
+    "free_models": [
+     "dots-studio/dots3-note-prev",
+     "sapiens-ai/agnes-2.5-flash",
+     "z-ai/glm-4.7-flash-free",
+     "z-ai/glm-4.6v-flash-free"
+    ],
+    "free_model_rule": "以官网模型列表 Free 筛选结果为准，单价标为输入、输出均 0 美元每百万 token；名单会变动"
+   },
+   "signup": {
+    "url": "https://zenmux.ai/login",
+    "requires": [
+     "email"
+    ],
+    "min_age": 18,
+    "notes": "可用邮箱、GitHub 或 Google 账号登录。免费订阅档（Free 计划）只能在网页 Studio Chat 使用，不提供 API 调用；通过 API 调用免费模型需使用按量付费（PAYG）API Key。"
+   },
+   "quotas": [
+    {
+     "unit": "tokens",
+     "amount": null,
+     "period": "day",
+     "scope": "account",
+     "models": "模型列表中标为 Free 的模型",
+     "note": "官方未公布免费模型的次数或 token 上限，GLM 4.7 Flash (Free) 页面带 Rate Limit 标记但无数值。错误码文档写明为防滥用，所有模型（含免费档）都要求账户余额非负；是否必须先充值才能调用免费模型，官方未明确写出",
+     "evidence": "https://zenmux.ai/models?price_filter=free",
+     "quote": "Z.AI: GLM 4.7 Flash (Free)"
+    }
+   ],
+   "overage": "unknown",
+   "expires": null,
+   "onboarding": {
+    "level": "L2",
+    "key_page": "https://zenmux.ai/platform/pay-as-you-go"
+   },
+   "terms": [
+    {
+     "point": "不得频繁或批量注册账号（3.3）",
+     "url": "https://zenmux.ai/docs/terms-of-service.html"
+    },
+    {
+     "point": "未经同意不得出借、出租、转让账号或让他人使用（3.3）",
+     "url": "https://zenmux.ai/docs/terms-of-service.html"
+    },
+    {
+     "point": "经用户授权，平台可使用输入内容来提供、维护、开发和改进服务（6.2）",
+     "url": "https://zenmux.ai/docs/terms-of-service.html"
+    },
+    {
+     "point": "须年满 18 岁或所在地成年年龄（2.2）",
+     "url": "https://zenmux.ai/docs/terms-of-service.html"
+    },
+    {
+     "point": "为防滥用，所有模型（含免费档）都要求账户余额非负",
+     "url": "https://zenmux.ai/docs/guide/advanced/error-codes.html"
+    }
+   ],
+   "tags": [
+    "聚合",
+    "免费模型"
+   ],
+   "sources": [
+    "https://zenmux.ai/pricing/overview",
+    "https://zenmux.ai/pricing/subscription",
+    "https://zenmux.ai/models?price_filter=free",
+    "https://zenmux.ai/z-ai/glm-4.7-flash-free",
+    "https://zenmux.ai/docs/guide/quickstart.html",
+    "https://zenmux.ai/docs/guide/subscription.html",
+    "https://zenmux.ai/docs/guide/advanced/error-codes.html",
+    "https://zenmux.ai/docs/terms-of-service.html"
+   ],
+   "en": {
+    "summary": "Model aggregation gateway; the few models marked Free in the model list are priced at $0 for input and output and can be called with a pay-as-you-go API key; no usage limits are published for them, and the account balance must not be negative.",
+    "signup_notes": "Sign in with email, GitHub or Google. The Free subscription plan works only in the web Studio Chat and has no API access; calling free models through the API uses a pay-as-you-go (PAYG) API key.",
+    "free_model_rule": "Follow the Free filter in the official model list; prices are shown as $0 per million input and output tokens; the list changes",
+    "tags": [
+     "Aggregator",
+     "Free model"
+    ],
+    "quotas": [
+     {
+      "models": "Models marked Free in the model list",
+      "note": "No request or token limit is published for the free models; the GLM 4.7 Flash (Free) page carries a Rate Limit badge without numbers. The error code docs say that to prevent abuse all models (including free tiers) require a non-negative balance; whether a top-up is required before using free models is not stated explicitly"
+     }
+    ],
+    "terms": [
+     "No frequent or bulk account registration (3.3)",
+     "Accounts may not be lent, leased, transferred or used by others without consent (3.3)",
+     "With user authorization, the platform may use input content to provide, maintain, develop and improve the service (6.2)",
+     "Users must be at least 18 or the age of majority where they live (2.2)",
+     "To prevent abuse, all models (including free tiers) require a non-negative account balance"
+    ]
+   }
+  },
+  {
+   "id": "zerolimitai",
+   "name": "ZeroLimitAI",
+   "homepage": "https://zerolimitai.com",
+   "region": "global",
+   "api_usable": true,
+   "status": "verified",
+   "last_verified": "2026-11-26",
+   "summary": "OpenAI 兼容的免费模型路由服务，注册后可创建 API Key 免费试用 7 天，每天 25 次调用，无需信用卡；试用期后需购买付费计划。",
+   "api": {
+    "protocol": [
+     "openai"
+    ],
+    "base_url": "https://www.zerolimitai.com/api/v1",
+    "models": [
+     "auto"
+    ],
+    "models_access": "quota"
+   },
+   "signup": {
+    "url": "https://zerolimitai.com",
+    "requires": [
+     "email"
+    ],
+    "min_age": 13,
+    "notes": "可用邮箱或 Google 账号注册，无需信用卡。试用期结束后 Key 返回 HTTP 402，需购买 Annual 或 Lifetime 计划。"
+   },
+   "quotas": [
+    {
+     "unit": "requests",
+     "amount": 25,
+     "period": "day",
+     "reset": "00:00 UTC",
+     "scope": "account",
+     "models": "auto（自动路由到当前排名最高的免费模型）",
+     "condition": "从创建第一个 API Key 起 7 天内有效，仅用于评估",
+     "expires_days": 7,
+     "new_users": true,
+     "evidence": "https://zerolimitai.com/terms",
+     "quote": "Developer API, free week: every account can create an API key that works for 7 days from the first key it creates, with 25 calls per day, for evaluation.",
+     "note": "另有每个 Key 每分钟 60 次、每个 IP 每分钟 120 次的限制；免费账号单次请求输入约 16,000 tokens 上限；上游免费额度紧张时，免费请求可能由较弱模型应答。"
+    }
+   ],
+   "overage": "blocked",
+   "onboarding": {
+    "level": "L2",
+    "key_pattern": "^zlai_",
+    "quota_api": "GET /api/v1/usage",
+    "quota_headers": [
+     "X-RateLimit-Limit",
+     "X-RateLimit-Remaining",
+     "X-RateLimit-Reset"
+    ]
+   },
+   "terms": [
+    {
+     "point": "不得共享账号，也不得让他人使用你的计划额度",
+     "url": "https://zerolimitai.com/terms"
+    },
+    {
+     "point": "禁止通过自动化手段绕过计划限制或速率限制",
+     "url": "https://zerolimitai.com/terms"
+    },
+    {
+     "point": "官方称不会用用户输入训练 AI 模型",
+     "url": "https://zerolimitai.com/terms"
+    },
+    {
+     "point": "免费试用周仅用于评估，不能用于为他人提供服务",
+     "url": "https://zerolimitai.com/developers"
+    }
+   ],
+   "tags": [
+    "免费模型",
+    "新人赠送",
+    "试用"
+   ],
+   "sources": [
+    "https://zerolimitai.com",
+    "https://zerolimitai.com/developers",
+    "https://zerolimitai.com/terms"
+   ],
+   "en": {
+    "summary": "OpenAI-compatible router over free models; after sign-up you can create an API key for a 7-day free trial with 25 calls per day, no credit card; after the trial a paid plan is needed.",
+    "signup_notes": "Sign up with email or Google, no credit card. After the trial the key returns HTTP 402 until you buy the Annual or Lifetime plan.",
+    "tags": [
+     "Free model",
+     "New-user credits",
+     "Trial"
+    ],
+    "quotas": [
+     {
+      "models": "auto (routes to the currently top-ranked free model)",
+      "condition": "Valid for 7 days from the first API key created, for evaluation only",
+      "note": "Also 60 requests per minute per key and 120 per minute per IP; free accounts are limited to about 16,000 input tokens per request; when the upstream free allowance is low, free requests may be answered by a lesser model."
+     }
+    ],
+    "terms": [
+     "Do not share your account or let others use your plan limits",
+     "Circumventing plan or rate limits through automation is prohibited",
+     "The provider states it does not use your inputs to train AI models",
+     "The free week is for evaluation only, not for serving users"
+    ]
+   }
+  },
+  {
    "id": "zhipu-bigmodel",
    "name": "Zhipu BigModel",
    "name_zh": "智谱开放平台",
@@ -6626,8 +10704,8 @@
    "region": "cn",
    "api_usable": true,
    "status": "verified",
-   "last_verified": "2026-11-19",
-   "summary": "GLM Flash 系列模型永久免费。",
+   "last_verified": "2026-11-25",
+   "summary": "GLM Flash 系列模型永久免费；新用户注册另送 2000 万 tokens 体验包。",
    "api": {
     "protocol": [
      "openai",
@@ -6643,6 +10721,7 @@
      "GLM-Z1-Flash",
      "GLM-4.6V-Flash",
      "GLM-4V-Flash",
+     "GLM-4.1V-Thinking-Flash",
      "CogView-3-Flash",
      "CogVideoX-Flash"
     ]
@@ -6661,8 +10740,19 @@
      "period": "day",
      "scope": "account",
      "evidence": "https://docs.bigmodel.cn/cn/guide/start/pricing.md",
+     "quote": "| GLM-4-Flash-250414 | 128K | 免费 | 免费 | 限时免费 | 不支持 |",
      "models": "Flash 免费模型",
      "note": "免费模型不计费，按模型限速"
+    },
+    {
+     "unit": "tokens",
+     "amount": 20000000,
+     "period": "one-time",
+     "scope": "account",
+     "new_users": true,
+     "evidence": "https://www.bigmodel.cn/login",
+     "quote": "新用户免费赠送专享 2000万 tokens体验包！",
+     "note": "注册页展示的新用户体验包；适用模型、有效期和实名要求官方页面未说明"
     }
    ],
    "overage": "blocked",
@@ -6674,25 +10764,40 @@
     {
      "point": "免费功能仅限非商业的个人研究学习",
      "url": "https://docs.bigmodel.cn/cn/terms/user-agreement.md"
+    },
+    {
+     "point": "不当注册或不当使用多个账户可能被冻结或关闭",
+     "url": "https://docs.bigmodel.cn/cn/terms/user-agreement.md"
+    },
+    {
+     "point": "未经书面同意不得转售、共享账号或提供 API Key 给第三方",
+     "url": "https://docs.bigmodel.cn/cn/terms/user-agreement.md"
     }
    ],
    "tags": [
-    "永久免费"
+    "永久免费",
+    "新人赠送"
    ],
    "en": {
-    "summary": "GLM Flash models are free permanently.",
+    "summary": "GLM Flash models are free permanently; new users also get a 20M-token trial pack on sign-up.",
     "signup_notes": "Non-Chinese phone numbers are supported",
     "tags": [
-     "Always free"
+     "Always free",
+     "New-user gift"
     ],
     "quotas": [
      {
       "models": "Free Flash models",
       "note": "Free models are not billed; rate-limited per model"
+     },
+     {
+      "note": "New-user trial pack shown on the sign-up page; applicable models, validity period and real-name requirements are not stated"
      }
     ],
     "terms": [
-     "Free features are for non-commercial personal research and study only"
+     "Free features are for non-commercial personal research and study only",
+     "Improper registration or use of multiple accounts may lead to account freeze or closure",
+     "Reselling, sharing accounts or giving API keys to third parties is not allowed without written consent"
     ]
    }
   },

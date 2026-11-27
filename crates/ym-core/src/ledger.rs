@@ -94,6 +94,37 @@ impl Ledger {
         Ok(Totals { requests: r as u64, tokens: t as u64 })
     }
 
+    /// Requests still in flight (no status yet) since `since`, and the average tokens of finished successful
+    /// requests in the same window (None when there are none). Used to keep concurrent streams under a token cap.
+    pub fn pending_since(&self, account_id: &str, since: DateTime<Utc>) -> anyhow::Result<(u64, Option<f64>)> {
+        let c = self.conn.lock().unwrap();
+        let (pending, done, tokens): (i64, i64, i64) = c.query_row(
+            "SELECT COALESCE(SUM(status IS NULL), 0), COALESCE(SUM(status BETWEEN 200 AND 299), 0),
+                    COALESCE(SUM(CASE WHEN status BETWEEN 200 AND 299 THEN prompt_tokens + completion_tokens ELSE 0 END), 0)
+             FROM usage WHERE account_id=?1 AND ts>=?2",
+            params![account_id, since.timestamp_millis()],
+            |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)),
+        )?;
+        Ok((pending as u64, (done > 0).then(|| tokens as f64 / done as f64)))
+    }
+
+    /// Requests per hour over the `hours` hours ending at `now`, oldest first (all accounts).
+    pub fn hourly(&self, now: DateTime<Utc>, hours: u32) -> anyhow::Result<Vec<u64>> {
+        let end = now.timestamp_millis();
+        let start = end - hours as i64 * 3_600_000;
+        let c = self.conn.lock().unwrap();
+        let mut stmt = c.prepare("SELECT (?2 - ts - 1) / 3600000, COUNT(*) FROM usage WHERE ts > ?1 AND ts <= ?2 GROUP BY 1")?;
+        let mut out = vec![0u64; hours as usize];
+        let rows = stmt.query_map(params![start, end], |r| Ok((r.get::<_, i64>(0)?, r.get::<_, i64>(1)?)))?;
+        for row in rows {
+            let (ago, n) = row?;
+            if (0..hours as i64).contains(&ago) {
+                out[hours as usize - 1 - ago as usize] = n as u64;
+            }
+        }
+        Ok(out)
+    }
+
     /// Most recent requests, newest first.
     pub fn recent(&self, limit: u32) -> anyhow::Result<Vec<UsageRow>> {
         let c = self.conn.lock().unwrap();
@@ -162,6 +193,20 @@ mod tests {
         l.cancel(b).unwrap();
         assert_eq!(l.totals_since("a", now - Duration::seconds(1)).unwrap(), Totals { requests: 1, tokens: 15 });
         assert_eq!(l.totals_since("b", now - Duration::seconds(1)).unwrap(), Totals::default());
+    }
+
+    #[test]
+    fn pending_and_hourly() {
+        let l = Ledger::in_memory().unwrap();
+        let now = Utc::now();
+        let a = l.begin("a", "m", now - Duration::minutes(90)).unwrap();
+        l.finish(a, 200, 100, 50).unwrap();
+        l.begin("a", "m", now - Duration::minutes(5)).unwrap(); // in flight
+        let (pending, avg) = l.pending_since("a", now - Duration::hours(3)).unwrap();
+        assert_eq!((pending, avg), (1, Some(150.0)));
+        let h = l.hourly(now, 24).unwrap();
+        assert_eq!(h.len(), 24);
+        assert_eq!((h[23], h[22], h.iter().sum::<u64>()), (1, 1, 2));
     }
 
     #[test]

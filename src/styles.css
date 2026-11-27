@@ -63,6 +63,7 @@ nav { display: flex; flex-direction: column; gap: 2px; }
 .nav-item[aria-current="page"] { background: var(--surface); color: var(--ink); font-weight: 600; box-shadow: 0 0 0 1px var(--line); }
 .nav-item[aria-current="page"]::before { content: ""; position: absolute; left: -12px; top: 9px; bottom: 9px; width: 3px; border-radius: 0 3px 3px 0; background: var(--gold); }
 .nav-item em { margin-left: auto; font-style: normal; font-size: 12px; color: var(--muted); font-weight: 500; }
+.app-ver { display: block; margin-top: 8px; padding: 0 4px; color: var(--muted); font-size: 11px; }
 .gateway { margin-top: auto; padding: 12px; border: 1px solid var(--line); border-radius: var(--r); background: var(--surface); font-size: 12.5px; }
 .gateway-head { display: flex; align-items: center; gap: 7px; color: var(--ink-2); font-weight: 550; }
 .gateway-url { margin-top: 6px; width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 6px; padding: 5px 8px; border: 0; border-radius: var(--r-sm); background: var(--sunken); color: var(--muted); }

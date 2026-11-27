@@ -55,6 +55,10 @@ export async function mockInvoke(cmd: string, _args?: Record<string, unknown>): 
       return usage;
     case "recent_requests":
       return log;
+    case "hourly_usage":
+      return Array.from({ length: 24 }, (_, i) => log.filter((r) => r.ts > now - (24 - i) * 3600e3 && r.ts <= now - (23 - i) * 3600e3).length);
+    case "app_info":
+      return { version: "0.1.1", commit: "preview", bundled_data: (square as { generated_at?: string }).generated_at?.slice(0, 10) ?? null };
     case "gateway_info":
     case "set_port":
     case "set_api_key":

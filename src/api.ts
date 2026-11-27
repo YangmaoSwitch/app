@@ -1,11 +1,17 @@
 import { invoke as tauriInvoke } from "@tauri-apps/api/core";
 
-/** Outside Tauri (plain browser preview) use local sample data, so the UI can be reviewed in a browser. */
+/** Outside Tauri (plain browser preview) use local sample data, so the UI can be reviewed in a browser.
+ *  The sample data is only bundled in dev (`npm run dev`) and preview builds (`npm run build:preview`);
+ *  the app's production build leaves it out. */
 export const inTauri = typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
 async function invoke<T>(cmd: string, args?: Record<string, unknown>): Promise<T> {
   if (inTauri) return tauriInvoke<T>(cmd, args);
-  const { mockInvoke } = await import("./preview");
-  return (await mockInvoke(cmd, args)) as T;
+  // a literal condition, so the production build drops this branch and the sample data with it
+  if (import.meta.env.DEV || import.meta.env.VITE_PREVIEW_DATA === "1") {
+    const { mockInvoke } = await import("./preview");
+    return (await mockInvoke(cmd, args)) as T;
+  }
+  throw new Error("只能在羊毛switch 桌面端里运行");
 }
 
 export interface Quota {
@@ -35,7 +41,7 @@ export interface Provider {
   ends?: string | null;
   ended?: string | null;
   summary?: string;
-  api?: { protocol: string[]; base_url: string; free_models?: string[]; free_model_rule?: string; models?: string[]; models_url?: string; models_access?: "free" | "quota" };
+  api?: { protocol: string[]; base_url: string; anthropic_base_url?: string | null; free_models?: string[]; free_model_rule?: string; models?: string[]; models_url?: string; models_access?: "free" | "quota" };
   signup: { url: string; requires: string[]; regions_blocked?: string[]; notes?: string };
   quotas: Quota[];
   overage: "blocked" | "auto_paid" | "manual" | "unknown";
@@ -98,6 +104,8 @@ export interface AccountUsage {
 
 export interface SquareModel {
   id: string;
+  /** merge key of the catalog build (same model across platforms) */
+  key?: string;
   name: string;
   vendor: string | null;
   description: string;
@@ -145,10 +153,28 @@ export interface ProviderModels {
 /** "$0.45 / $1.34" per million input / output tokens */
 export const priceText = (p?: Price | null) => (p ? `$${+p.input.toFixed(3)} / $${+p.output.toFixed(3)}` : "");
 
-/** Normalized model name used to match the same model across platforms (same rule as the catalog build). */
+/** Normalized model name used to match the same model across platforms.
+ *  Must stay identical to `model_key` in the catalog's scripts/build_models.py. */
 export function modelKey(id: string): string {
   const last = id.split("/").pop() ?? id;
-  return last.split(":")[0].toLowerCase().replace(/[\s_.]+/g, "-");
+  return last
+    .split(":")[0]
+    .toLowerCase()
+    .replace(/[\s_.]+/g, "-")
+    .replace(/-(free|ga)$/, "")
+    .replace(/-(free|ga)(?=-\d{6}$)/, "")
+    .replace(/-\d{6}$/, ""); // date stamp such as doubao-seed-2-1-pro-260628
+}
+
+/** Every key a square model is known by: its merge key from the catalog build, its id and each offer's model id. */
+export function squareKeys(m: SquareModel): string[] {
+  return Array.from(new Set([m.key, modelKey(m.id), ...m.offers.map((o) => modelKey(o.model))].filter((k): k is string => !!k)));
+}
+
+export interface AppInfo {
+  version: string;
+  commit: string;
+  bundled_data: string | null;
 }
 
 export interface ModelSquare {
@@ -210,6 +236,8 @@ export const api = {
   mySubmissions: () => invoke<Submission[]>("my_submissions"),
   modelSquare: (refresh = false) => invoke<ModelSquare>("get_model_square", { refresh }),
   recentRequests: (limit = 100) => invoke<UsageRow[]>("recent_requests", { limit }),
+  hourlyUsage: () => invoke<number[]>("hourly_usage"),
+  appInfo: () => invoke<AppInfo>("app_info"),
   catalog: (refresh = false) => invoke<Catalog>("get_catalog", { refresh }),
   accounts: () => invoke<Account[]>("list_accounts"),
   addAccount: (providerId: string, key: string, baseUrl?: string) =>

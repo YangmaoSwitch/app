@@ -1,11 +1,13 @@
 {
   "name": "yangmao-switch-app",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.1.1",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
+    "build:preview": "tsc --noEmit && vite build --mode preview",
+    "snapshot": "node scripts/update-snapshots.mjs",
     "tauri": "tauri"
   },
   "dependencies": {

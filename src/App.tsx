@@ -6,6 +6,8 @@ import {
   ChevronDown,
   Copy,
   ExternalLink,
+  Eye,
+  EyeOff,
   Gift,
   House,
   KeyRound,
@@ -24,7 +26,7 @@ import {
 import TitleBar, { isMac } from "./TitleBar";
 import SubmitDialog, { SubmitPrefill } from "./Submit";
 import { ModelLogo, ProviderLogo } from "./logos";
-import { api, Account, AccountUsage, Catalog, GatewayInfo, LimitUsage, ModelEntry, ModelSquare, SquareModel, Offer, Access, modelKey, quotaShort, priceText, ProviderModels, overageText, Provider, quotaParts, quotaText, REQUIRES, UsageRow } from "./api";
+import { api, Account, AccountUsage, AppInfo, Catalog, GatewayInfo, LimitUsage, ModelEntry, ModelSquare, SquareModel, Offer, Access, modelKey, squareKeys, quotaShort, priceText, ProviderModels, overageText, Provider, quotaParts, quotaText, REQUIRES, UsageRow } from "./api";
 
 type Page = "home" | "catalog" | "models" | "accounts" | "usage" | "connect";
 type ModelsPreset = { sort?: SortKey; access?: "all" | "free"; open?: string };
@@ -57,6 +59,7 @@ export default function App() {
   const [toast, setToast] = useState<{ ok: boolean; text: string } | null>(null);
   const [submit, setSubmit] = useState<SubmitPrefill | null>(null);
   const [preset, setPreset] = useState<ModelsPreset>({});
+  const [info, setInfo] = useState<AppInfo | null>(null);
 
   const reload = useCallback(async () => setAccounts(await api.accounts()), []);
   const notify: Notify = useCallback((ok, text) => {
@@ -67,6 +70,7 @@ export default function App() {
   useEffect(() => {
     api.catalog().then(setCatalog).catch((e) => notify(false, String(e)));
     api.gateway().then(setGw);
+    api.appInfo().then(setInfo).catch(() => setInfo(null));
     reload();
     const load = () => api.usage().then(setUsage);
     load();
@@ -106,6 +110,11 @@ export default function App() {
           <span>提交 / 纠错</span>
         </button>
         <GatewayCard gw={gw} notify={notify} />
+        {info && (
+          <small className="app-ver mono" title={info.bundled_data ? `内置数据 ${info.bundled_data}` : undefined}>
+            v{info.version} · {info.commit}
+          </small>
+        )}
       </aside>
 
       <TitleBar />
@@ -133,7 +142,7 @@ export default function App() {
         {page === "models" && <ModelsPage key={JSON.stringify(preset)} preset={preset} catalog={catalog} accounts={accounts} notify={notify} onOpenProvider={() => go("catalog")} />}
         {page === "accounts" && <AccountsPage accounts={accounts} usage={usage} onChange={reload} notify={notify} onBrowse={() => go("catalog")} />}
         {page === "usage" && <UsagePage usage={usage} />}
-        {page === "connect" && <ConnectPage accounts={accounts} gw={gw} onGw={setGw} notify={notify} />}
+        {page === "connect" && <ConnectPage accounts={accounts} catalog={catalog} gw={gw} onGw={setGw} notify={notify} />}
       </main>
 
       {toast && (
@@ -560,6 +569,7 @@ function AddKeyDialog(props: { p: Provider; onClose: () => void; onAdded: (a: Ac
           <span>接口地址</span>
           <input className="mono" value={baseUrl} onChange={(e) => setBaseUrl(e.target.value)} />
           {baseUrl.includes("ACCOUNT_ID") && <small className="warn-text">把地址里的 ACCOUNT_ID 换成你的账户 ID。</small>}
+          {baseUrl !== (p.api?.base_url ?? "") && <small className="muted">Key 会发到这个地址，只能改成 {p.name} 自己域名下的地址。</small>}
         </label>
         {err && <p className="danger-text">{err}</p>}
         <div className="dialog-actions">
@@ -623,8 +633,8 @@ const ACCESS: Record<Access, { text: string; tone: string }> = {
   account: { text: "你的账号可用", tone: "ok" },
 };
 
-/** Catalog ranking of providers: score from the server (free models x3, renewing free quota x1, one-time gift x0.3),
- *  unverified entries last. */
+/** Catalog ranking of providers: score from the catalog build (free models x1, renewing free quota x0.5,
+ *  one-time gift x0.1, best 10 models), unverified entries last. */
 const byProviderRank = (sq: ModelSquare | null) => (a: Provider, b: Provider) =>
   Number(a.status !== "verified") - Number(b.status !== "verified") ||
   (sq?.providers?.[b.id]?.score ?? 0) - (sq?.providers?.[a.id]?.score ?? 0) ||
@@ -765,7 +775,7 @@ function ModelsPage(props: { preset: ModelsPreset; catalog: Catalog | null; acco
         byKey.set(k, [...(byKey.get(k) ?? []), { provider: p, model: e.id, access: "account" }]);
       }
     return (data?.models ?? []).map((m) => {
-      const extra = (byKey.get(modelKey(m.id)) ?? []).filter((o, i, a) => !m.offers.some((x) => x.provider === o.provider) && a.findIndex((y) => y.provider === o.provider) === i);
+      const extra = squareKeys(m).flatMap((k) => byKey.get(k) ?? []).filter((o, i, a) => !m.offers.some((x) => x.provider === o.provider) && a.findIndex((y) => y.provider === o.provider) === i);
       return extra.length ? { ...m, offers: [...m.offers, ...extra] } : m;
     });
   }, [data, mine, props.accounts]);
@@ -1139,12 +1149,10 @@ function AccountsPage(props: { accounts: Account[]; usage: AccountUsage[]; onCha
 
 /* ---------- 用量 ---------- */
 
-function HourlyChart({ log }: { log: UsageRow[] }) {
+/** Requests per hour over the last 24 hours, counted in the local ledger (all requests, not just the recent log). */
+function HourlyChart({ hours }: { hours: number[] }) {
   const now = Date.now();
-  const buckets = Array.from({ length: 24 }, (_, i) => {
-    const end = now - (23 - i) * 3600e3;
-    return { end, n: log.filter((r) => r.ts > end - 3600e3 && r.ts <= end).length };
-  });
+  const buckets = hours.map((n, i) => ({ end: now - (hours.length - 1 - i) * 3600e3, n }));
   const max = Math.max(1, ...buckets.map((b) => b.n));
   return (
     <div className="chart" role="img" aria-label="近 24 小时每小时请求数">
@@ -1164,9 +1172,13 @@ function HourlyChart({ log }: { log: UsageRow[] }) {
 
 function UsagePage({ usage }: { usage: AccountUsage[] }) {
   const [log, setLog] = useState<UsageRow[]>([]);
+  const [hours, setHours] = useState<number[]>(Array(24).fill(0));
   const [tab, setTab] = useState<"limits" | "log">("limits");
   useEffect(() => {
-    const load = () => api.recentRequests(500).then(setLog);
+    const load = () => {
+      api.recentRequests(500).then(setLog);
+      api.hourlyUsage().then(setHours);
+    };
     load();
     const t = window.setInterval(load, 4000);
     return () => window.clearInterval(t);
@@ -1199,7 +1211,7 @@ function UsagePage({ usage }: { usage: AccountUsage[] }) {
             <b className={`num ${blocked ? "danger-text" : ""}`}>{blocked}</b>
           </div>
         </div>
-        <HourlyChart log={log} />
+        <HourlyChart hours={hours} />
       </div>
 
       <Segmented
@@ -1288,16 +1300,24 @@ function UsagePage({ usage }: { usage: AccountUsage[] }) {
 
 /* ---------- 接入工具 ---------- */
 
-function CopyRow({ label, value, hint, notify, mono = true, children }: { label: string; value: string; hint?: ReactNode; notify: Notify; mono?: boolean; children?: ReactNode }) {
+/** `secret`: the text to hide on screen (e.g. the local API key) until "显示" is pressed; copying always copies the real value. */
+function CopyRow({ label, value, hint, notify, mono = true, secret, children }: { label: string; value: string; hint?: ReactNode; notify: Notify; mono?: boolean; secret?: string; children?: ReactNode }) {
   const [done, setDone] = useState(false);
+  const [shown, setShown] = useState(false);
+  const masked = secret && !shown ? value.split(secret).join(maskKey(secret)) : value;
   return (
     <div className="copy-row">
       <div>
         <span className="copy-label">{label}</span>
-        <code className={mono ? "" : "plain"}>{value}</code>
+        <code className={mono ? "" : "plain"}>{masked}</code>
         {hint && <small className="muted">{hint}</small>}
       </div>
       <div className="copy-actions">
+        {secret && (
+          <button className="btn" aria-pressed={shown} onClick={() => setShown(!shown)}>
+            {shown ? <EyeOff size={15} /> : <Eye size={15} />} {shown ? "隐藏" : "显示"}
+          </button>
+        )}
         {children}
         <button
           className="btn"
@@ -1315,8 +1335,16 @@ function CopyRow({ label, value, hint, notify, mono = true, children }: { label:
   );
 }
 
-function ConnectPage(props: { accounts: Account[]; gw: GatewayInfo | null; onGw: (g: GatewayInfo) => void; notify: Notify }) {
+/** "ym-3f9a…b3c4": enough to tell keys apart, not enough to use one seen over someone's shoulder or in a screenshot. */
+const maskKey = (k: string) => (k.length > 12 ? `${k.slice(0, 7)}…${k.slice(-4)}` : "•".repeat(k.length));
+
+function ConnectPage(props: { accounts: Account[]; catalog: Catalog | null; gw: GatewayInfo | null; onGw: (g: GatewayInfo) => void; notify: Notify }) {
   const gw = props.gw;
+  // providers with a native Claude endpoint, from the catalog (the ones the user has accounts with first)
+  const owned = new Set(props.accounts.map((a) => a.provider_id));
+  const claudeProviders = (props.catalog?.providers ?? [])
+    .filter((p) => p.api_usable && p.api?.anthropic_base_url && !p.ended)
+    .sort((a, b) => Number(owned.has(b.id)) - Number(owned.has(a.id)) || a.name.localeCompare(b.name));
   const [models, setModels] = useState<ModelEntry[]>([]);
   const [routed, setRouted] = useState<ModelEntry[]>([]);
   const [port, setPort] = useState("");
@@ -1374,7 +1402,7 @@ function ConnectPage(props: { accounts: Account[]; gw: GatewayInfo | null; onGw:
             </div>
           </div>
           {editKey === null ? (
-            <CopyRow label="API Key" value={gw.api_key} hint="首次启动时随机生成，工具里填它才能访问本机入口" notify={props.notify}>
+            <CopyRow label="API Key" value={gw.api_key} secret={gw.api_key} hint="首次启动时随机生成，工具里填它才能访问本机入口" notify={props.notify}>
               <button className="btn" onClick={() => setEditKey(gw.api_key)}>
                 自定义
               </button>
@@ -1435,14 +1463,14 @@ function ConnectPage(props: { accounts: Account[]; gw: GatewayInfo | null; onGw:
           {tool === "openai" ? (
             <>
               <CopyRow label="Base URL" value={`${root}/v1`} hint="Cherry Studio、Cline、OpenAI SDK 等" notify={props.notify} />
-              <CopyRow label="API Key" value={gw.api_key} notify={props.notify} />
+              <CopyRow label="API Key" value={gw.api_key} secret={gw.api_key} notify={props.notify} />
               <CopyRow label="模型名" value={model} hint="auto 由羊毛switch 自动选模型；也可以填下方列表里的具体模型" notify={props.notify} />
             </>
           ) : (
             <>
               <CopyRow label="Base URL" value={root} hint="Claude Code、Anthropic SDK 等；不带 /v1" notify={props.notify} />
-              <CopyRow label="API Key" value={gw.api_key} hint="填在 ANTHROPIC_AUTH_TOKEN 或 x-api-key" notify={props.notify} />
-              <CopyRow label="Claude Code" value={envPs} mono hint="PowerShell 里粘贴运行；macOS / Linux 用右侧按钮复制" notify={props.notify}>
+              <CopyRow label="API Key" value={gw.api_key} secret={gw.api_key} hint="填在 ANTHROPIC_AUTH_TOKEN 或 x-api-key" notify={props.notify} />
+              <CopyRow label="Claude Code" value={envPs} secret={gw.api_key} mono hint="PowerShell 里粘贴运行；macOS / Linux 用右侧按钮复制" notify={props.notify}>
                 <button
                   className="btn"
                   onClick={async () => {
@@ -1453,7 +1481,16 @@ function ConnectPage(props: { accounts: Account[]; gw: GatewayInfo | null; onGw:
                   macOS / Linux
                 </button>
               </CopyRow>
-              <p className="muted small">羊毛switch 只做转发，不转换格式：Claude 接口的请求只会发给提供原生 Claude 接口的供应商（目前有智谱、硅基流动、AMD Radeon Cloud）。所选模型的供应商没有 Claude 接口时会直接报错，请改用 OpenAI 接口。</p>
+              <p className="muted small">
+                羊毛switch 只做转发，不转换格式：Claude 接口的请求只会发给提供原生 Claude 接口的供应商
+                {claudeProviders.length > 0 && (
+                  <>
+                    （目录里有 {claudeProviders.length} 家：{claudeProviders.slice(0, 8).map(pname).join("、")}
+                    {claudeProviders.length > 8 ? " 等" : ""}）
+                  </>
+                )}
+                。所选模型的供应商没有 Claude 接口时会直接报错，请改用 OpenAI 接口。
+              </p>
             </>
           )}
         </section>

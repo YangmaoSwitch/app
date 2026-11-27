@@ -108,9 +108,12 @@ async fn account_github(app: tauri::AppHandle) -> R<serde_json::Value> {
     }
     let listener = tokio::net::TcpListener::bind(("127.0.0.1", 0)).await.map_err(s)?;
     let port = listener.local_addr().map_err(s)?.port();
-    let url = format!("{}/api/auth/github/start?client=app&port={port}", ACCOUNT_API.trim_end_matches('/'));
+    // the service redirects to /callback/<nonce>; only that path is accepted
+    let path = ym_core::oauth::callback_path();
+    let nonce = path.trim_start_matches("/callback/");
+    let url = format!("{}/api/auth/github/start?client=app&port={port}&nonce={nonce}", ACCOUNT_API.trim_end_matches('/'));
     app.opener().open_url(url, None::<&str>).map_err(s)?;
-    let params = ym_core::oauth::wait_callback(listener, std::time::Duration::from_secs(600)).await.map_err(s)?;
+    let params = ym_core::oauth::wait_callback(listener, &path, std::time::Duration::from_secs(600)).await.map_err(s)?;
     let token = params.iter().find(|(k, _)| k == "token").map(|(_, v)| v.clone()).ok_or("github_failed")?;
     keychain_set(SESSION_ENTRY, &token)?;
     account_call(reqwest::Method::GET, "/api/me", None).await
@@ -406,6 +409,28 @@ fn recent_requests(state: State<'_, AppState>, limit: u32) -> R<Vec<ym_core::led
     state.gateway.ledger().recent(limit.min(500)).map_err(s)
 }
 
+/// Requests per hour over the last 24 hours, oldest first, counted in the ledger (not limited to recent rows).
+#[tauri::command]
+fn hourly_usage(state: State<'_, AppState>) -> R<Vec<u64>> {
+    state.gateway.ledger().hourly(chrono::Utc::now(), 24).map_err(s)
+}
+
+#[derive(Serialize)]
+struct AppInfo {
+    version: &'static str,
+    commit: &'static str,
+    /// generated_at of the model data bundled into this build (used offline before the first download)
+    bundled_data: Option<String>,
+}
+
+#[tauri::command]
+fn app_info() -> AppInfo {
+    let bundled_data = serde_json::from_str::<serde_json::Value>(BUNDLED_MODELS)
+        .ok()
+        .and_then(|v| v.get("generated_at").and_then(|g| g.as_str()).map(|g| g[..10.min(g.len())].to_string()));
+    AppInfo { version: env!("CARGO_PKG_VERSION"), commit: env!("YM_GIT_COMMIT"), bundled_data }
+}
+
 #[derive(Serialize)]
 struct GatewayInfo {
     running: bool,
@@ -571,6 +596,8 @@ pub fn run() {
             routed_models,
             usage,
             recent_requests,
+            hourly_usage,
+            app_info,
             gateway_info,
             set_port,
             set_api_key,
